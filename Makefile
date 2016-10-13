@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -c -Wall -Wextra -Wpedantic -std=c++14 
+CXXFLAGS = -c -Wall -Wextra -Wpedantic -g3 -std=c++14 
 
 all: list tree clean	
 

@@ -16,17 +16,15 @@ namespace tree {
 	};
 
 
-	static inline void write_dot_file (FILE* file, const tree_t* tree);
+	static inline void		write_dot_file (FILE* file, const tree_t* tree);
+	static inline unsigned	length_to_root (const tree_t* ptr);
 
 
 
 	tree_t* create_tree (tree_t* parent, int data) {
 		tree_t* new_tree = new tree_t;
 
-		if (parent)
-			new_tree->parent_ = parent;
-		else
-			new_tree->parent_ = nullptr;
+		new_tree->parent_ = parent;
 		new_tree->left_   = nullptr;
 		new_tree->right_  = nullptr;
 		new_tree->data_   = data;
@@ -136,7 +134,7 @@ namespace tree {
 
 		const tree_t* cur = tree;
 		for (*fst = nullptr; ! *fst;) {
-			int way = rand () % 20;
+			int way = rand () % 400;
 
 			if (way == 0)
 				*fst = cur;
@@ -149,7 +147,7 @@ namespace tree {
 		}
 		cur = tree;
 		for (*snd = nullptr; ! *snd;) {
-			int way = rand () % 20;
+			int way = rand () % 400;
 
 			if (way == 0)
 				*snd = cur;
@@ -163,49 +161,50 @@ namespace tree {
 	}
 
 
-	int calculate_lengh (const tree_t* fst, const tree_t* snd) {
+	int calculate_length (const tree_t* fst, const tree_t* snd) {
 		assert (fst);
 		assert (snd);
 
 		if (fst == snd)
 			return 0;
 
-		using namespace list;
+		unsigned l1 = length_to_root (fst);
+		unsigned l2 = length_to_root (snd);
 
-		node_t* flist = create_list (static_cast <const void*> (fst));
-		node_t* slist = create_list (static_cast <const void*> (snd));
-
-		const tree_t* cur = fst;
-		while (cur) {
-			push_front (&flist, cur);
-			cur = cur->parent_;
+		int length = 0;
+		while (l1 > l2) {
+			length++;
+			l1--;
+			fst = fst->parent_;
 		}
-		cur = snd;
-		while (cur) {
-			push_front (&slist, cur);
-			cur = cur->parent_;
+		while (l1 < l2) {
+			length++;
+			l2--;
+			snd = snd->parent_;
 		}
 
-		unsigned counter = 0;
-		while (!is_empty (flist) && !is_empty (slist) && pop_front (&flist) == pop_front (&slist))
-			counter++;
+		while (l1 > 0 && fst != snd) {
+			length += 2;
+			l1--;
+			fst = fst->parent_;
+			snd = snd->parent_;
+		}
 
-		if (counter == 0)
+		if (fst != snd)
 			return -1;
+		return length;
+	}
 
-		counter = 0;
-		if (is_empty (flist) || is_empty (slist))
-			counter++;
 
-		while (!is_empty (flist)) {
-			pop_front (&flist);
-			counter++;
+	static inline unsigned	length_to_root (const tree_t* ptr) {
+		assert (ptr);
+
+		unsigned length = 0;
+		while (ptr->parent_) {
+			ptr = ptr->parent_;
+			length++;
 		}
-		while (!is_empty (slist)) {
-			pop_front (&slist);
-			counter++;
-		}
 
-		return counter;
+		return length;
 	}
 }

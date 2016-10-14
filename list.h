@@ -15,6 +15,7 @@ namespace list {
 	node_t*  	reverse	 	(node_t* list);
 	void	 	random_loop (node_t* list);
 	unsigned 	find_loop	(const node_t* list, const node_t** loop_begin);
+	node_t*		copy		(const node_t* list);
 }
 
 

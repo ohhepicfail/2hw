@@ -196,7 +196,6 @@ namespace list {
 			push_front (&new_list, list->data_);
 			list = list->next_;
 		}
-
 		return new_list;
 	}
 }

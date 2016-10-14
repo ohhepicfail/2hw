@@ -35,16 +35,38 @@ namespace tree {
 
 	void delete_tree (tree_t* tree) {
 		assert (tree);
+	
+		using namespace list;
 
-		if (tree->left_)
-			delete_tree (tree->left_);
-		if (tree->right_)
-			delete_tree (tree->right_);
+		node_t* in  = create_list (tree);
+		node_t* out = nullptr;
 
-		tree->left_  = nullptr;
-		tree->right_ = nullptr;
+		while ( ! is_empty (in)) {
+			if (is_empty (out)) {
+				out = copy (in);
+				delete_list (in);
+				in = nullptr;
+			}
 
-		delete tree;		
+			const tree_t* cur = static_cast<const tree_t*> (pop_front (&out));
+			if (cur->left_) {
+				if (in)
+					push_front (&in, cur->left_);
+				else 
+					in = create_list (cur->left_);
+			}
+			if (cur->right_) {
+				if (in)
+					push_front (&in, cur->right_);
+				else 
+					in = create_list (cur->right_);
+			}
+
+			delete cur;
+		}	
+
+		while ( ! is_empty (out))
+			delete static_cast<const tree_t*> (pop_front (&out));
 	}
 
 
@@ -106,22 +128,22 @@ namespace tree {
 		static long long int null_counter = -1;
 
 		if (tree->left_) {
-			fprintf (file, "\t%u->%u\n", tree, tree->left_);
+			fprintf (file, "\t%lu->%lu\n", reinterpret_cast<unsigned long> (tree), reinterpret_cast<unsigned long> (tree->left_));
 			write_dot_file (file, tree->left_);
 		} else {
-			fprintf (file, "\t%u->%lld\n", tree, null_counter);
+			fprintf (file, "\t%lu->%lld\n", reinterpret_cast<unsigned long> (tree), null_counter);
 			fprintf (file, "\t%lld [label = \"null\"]\n", null_counter--);
 		}
 
 		if (tree->right_) {
-			fprintf (file, "\t%u->%u\n", tree, tree->right_);
+			fprintf (file, "\t%lu->%lu\n", reinterpret_cast<unsigned long> (tree), reinterpret_cast<unsigned long> (tree->right_));
 			write_dot_file (file, tree->right_);
 		} else {
-			fprintf (file, "\t%u->%lld\n", tree, null_counter);
+			fprintf (file, "\t%lu->%lld\n", reinterpret_cast<unsigned long> (tree), null_counter);
 			fprintf (file, "\t%lld [label = \"null\"]\n", null_counter--);
 		}
 
-		fprintf (file, "\t%u [label = \"%d\"]\n", tree, tree->data_);
+		fprintf (file, "\t%lu [label = \"%d\"]\n", reinterpret_cast<unsigned long> (tree), tree->data_);
 	}
 
 

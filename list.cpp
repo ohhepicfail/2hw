@@ -72,7 +72,7 @@ namespace list {
 	}
 
 
-	const void* pop_front	(node_t** list) {
+	const void* pop_front (node_t** list) {
 		assert (list);
 		assert (*list);
 
@@ -183,5 +183,20 @@ namespace list {
 		}
 
 		return loop_size;
+	}
+
+
+	node_t* copy (const node_t* list) {
+		assert (list);
+
+		node_t* new_list = create_list (list->data_);
+		list = list->next_;
+
+		while (list) {
+			push_front (&new_list, list->data_);
+			list = list->next_;
+		}
+
+		return new_list;
 	}
 }

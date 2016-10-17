@@ -36,6 +36,15 @@ namespace tree {
 
 	void delete_tree (tree_t* tree) {
 		assert (tree);
+<<<<<<< HEAD
+	
+		using namespace list;
+
+		node_t* in  = create_list (tree);
+		node_t* out = nullptr;
+
+		while ( ! is_empty (in)) {
+=======
 
 		using namespace list;
 
@@ -43,6 +52,7 @@ namespace tree {
 		node_t* out = nullptr;
 
 		while ( ! is_empty (in) || ! is_empty (out)) {
+>>>>>>> master
 			if (is_empty (out)) {
 				out = copy (in);
 				delete_list (in);
@@ -50,6 +60,26 @@ namespace tree {
 			}
 
 			const tree_t* cur = static_cast<const tree_t*> (pop_front (&out));
+<<<<<<< HEAD
+			if (cur->left_) {
+				if (in)
+					push_front (&in, cur->left_);
+				else 
+					in = create_list (cur->left_);
+			}
+			if (cur->right_) {
+				if (in)
+					push_front (&in, cur->right_);
+				else 
+					in = create_list (cur->right_);
+			}
+
+			delete cur;
+		}	
+
+		while ( ! is_empty (out))
+			delete static_cast<const tree_t*> (pop_front (&out));
+=======
 
 			if (cur->left_)
 				in = create_or_push_front (in, cur->left_);
@@ -58,6 +88,7 @@ namespace tree {
 
 			delete cur;
 		}	
+>>>>>>> master
 	}
 
 

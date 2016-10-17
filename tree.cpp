@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
+#include <cstdint>
 #include "list.h"
 #include "tree.h"
 
@@ -36,15 +37,27 @@ namespace tree {
 	void delete_tree (tree_t* tree) {
 		assert (tree);
 
-		if (tree->left_)
-			delete_tree (tree->left_);
-		if (tree->right_)
-			delete_tree (tree->right_);
+		using namespace list;
 
-		tree->left_  = nullptr;
-		tree->right_ = nullptr;
+		node_t* in  = create_or_push_front (nullptr, tree);
+		node_t* out = nullptr;
 
-		delete tree;		
+		while ( ! is_empty (in) || ! is_empty (out)) {
+			if (is_empty (out)) {
+				out = copy (in);
+				delete_list (in);
+				in = nullptr;
+			}
+
+			const tree_t* cur = static_cast<const tree_t*> (pop_front (&out));
+
+			if (cur->left_)
+				in = create_or_push_front (in, cur->left_);
+			if (cur->right_)
+				in = create_or_push_front (in, cur->right_);
+
+			delete cur;
+		}	
 	}
 
 
@@ -106,22 +119,22 @@ namespace tree {
 		static long long int null_counter = -1;
 
 		if (tree->left_) {
-			fprintf (file, "\t%u->%u\n", tree, tree->left_);
+			fprintf (file, "\t%lu->%lu\n", reinterpret_cast<unsigned long> (tree), reinterpret_cast<unsigned long> (tree->left_));
 			write_dot_file (file, tree->left_);
 		} else {
-			fprintf (file, "\t%u->%lld\n", tree, null_counter);
+			fprintf (file, "\t%lu->%lld\n", reinterpret_cast<unsigned long> (tree), null_counter);
 			fprintf (file, "\t%lld [label = \"null\"]\n", null_counter--);
 		}
 
 		if (tree->right_) {
-			fprintf (file, "\t%u->%u\n", tree, tree->right_);
+			fprintf (file, "\t%lu->%lu\n", reinterpret_cast<unsigned long> (tree), reinterpret_cast<unsigned long> (tree->right_));
 			write_dot_file (file, tree->right_);
 		} else {
-			fprintf (file, "\t%u->%lld\n", tree, null_counter);
+			fprintf (file, "\t%lu->%lld\n", reinterpret_cast<unsigned long> (tree), null_counter);
 			fprintf (file, "\t%lld [label = \"null\"]\n", null_counter--);
 		}
 
-		fprintf (file, "\t%u [label = \"%d\"]\n", tree, tree->data_);
+		fprintf (file, "\t%lu [label = \"%d\"]\n", reinterpret_cast<unsigned long> (tree), tree->data_);
 	}
 
 
@@ -204,6 +217,40 @@ namespace tree {
 			ptr = ptr->parent_;
 			length++;
 		}
+
+		return length;
+	}
+
+
+	int length_bitlabel (const tree_t* fst, const tree_t* snd) {
+		assert (fst);
+		assert (snd);
+
+		tree_t* cur = const_cast<tree_t*> (fst);
+		while (cur) {
+			tree_t* next = cur->parent_;
+			cur->parent_ = const_cast<tree_t*> (reinterpret_cast<const tree_t*> (reinterpret_cast<intptr_t> (cur->parent_) | 1));
+			cur = next;
+		}
+
+		int length = 0;
+		const tree_t* common_vertex = snd;
+		for (; common_vertex && ! (reinterpret_cast<intptr_t> (common_vertex->parent_) & 1); common_vertex = common_vertex->parent_)
+			length++; 
+
+		cur = const_cast<tree_t*> (fst);
+		bool flag = false;
+		while (cur && (reinterpret_cast<intptr_t> (cur->parent_) & 1)) {
+			if (cur == common_vertex)
+				flag = true;
+			if (!flag)
+				length++;
+			cur->parent_ = const_cast<tree_t*> (reinterpret_cast<const tree_t*> (reinterpret_cast<intptr_t> (cur->parent_) & ~1));
+			cur = cur->parent_;
+		}
+
+		if (!flag)
+			return -1;
 
 		return length;
 	}

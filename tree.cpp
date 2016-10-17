@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
+#include <cstdint>
 #include "list.h"
 #include "tree.h"
 
@@ -35,6 +36,7 @@ namespace tree {
 
 	void delete_tree (tree_t* tree) {
 		assert (tree);
+<<<<<<< HEAD
 	
 		using namespace list;
 
@@ -42,6 +44,15 @@ namespace tree {
 		node_t* out = nullptr;
 
 		while ( ! is_empty (in)) {
+=======
+
+		using namespace list;
+
+		node_t* in  = create_or_push_front (nullptr, tree);
+		node_t* out = nullptr;
+
+		while ( ! is_empty (in) || ! is_empty (out)) {
+>>>>>>> master
 			if (is_empty (out)) {
 				out = copy (in);
 				delete_list (in);
@@ -49,6 +60,7 @@ namespace tree {
 			}
 
 			const tree_t* cur = static_cast<const tree_t*> (pop_front (&out));
+<<<<<<< HEAD
 			if (cur->left_) {
 				if (in)
 					push_front (&in, cur->left_);
@@ -67,6 +79,16 @@ namespace tree {
 
 		while ( ! is_empty (out))
 			delete static_cast<const tree_t*> (pop_front (&out));
+=======
+
+			if (cur->left_)
+				in = create_or_push_front (in, cur->left_);
+			if (cur->right_)
+				in = create_or_push_front (in, cur->right_);
+
+			delete cur;
+		}	
+>>>>>>> master
 	}
 
 
@@ -226,6 +248,40 @@ namespace tree {
 			ptr = ptr->parent_;
 			length++;
 		}
+
+		return length;
+	}
+
+
+	int length_bitlabel (const tree_t* fst, const tree_t* snd) {
+		assert (fst);
+		assert (snd);
+
+		tree_t* cur = const_cast<tree_t*> (fst);
+		while (cur) {
+			tree_t* next = cur->parent_;
+			cur->parent_ = const_cast<tree_t*> (reinterpret_cast<const tree_t*> (reinterpret_cast<intptr_t> (cur->parent_) | 1));
+			cur = next;
+		}
+
+		int length = 0;
+		const tree_t* common_vertex = snd;
+		for (; common_vertex && ! (reinterpret_cast<intptr_t> (common_vertex->parent_) & 1); common_vertex = common_vertex->parent_)
+			length++; 
+
+		cur = const_cast<tree_t*> (fst);
+		bool flag = false;
+		while (cur && (reinterpret_cast<intptr_t> (cur->parent_) & 1)) {
+			if (cur == common_vertex)
+				flag = true;
+			if (!flag)
+				length++;
+			cur->parent_ = const_cast<tree_t*> (reinterpret_cast<const tree_t*> (reinterpret_cast<intptr_t> (cur->parent_) & ~1));
+			cur = cur->parent_;
+		}
+
+		if (!flag)
+			return -1;
 
 		return length;
 	}

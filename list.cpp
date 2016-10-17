@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
+#include <cstdint>
 #include "list.h"
 
 namespace list {
@@ -15,7 +16,7 @@ namespace list {
 	void delete_list (node_t* list) {
 		assert (list);
 
-		const node_t* loop_begin;
+		const node_t* loop_begin = nullptr;
 		unsigned loop_size  = find_loop (list, &loop_begin);
 
 		while (list && loop_begin != list) {
@@ -32,10 +33,11 @@ namespace list {
 	}
 
 
-	node_t* create_list (const void* data) {
-		node_t* list = new node_t;
-		list->data_ = data;
-		list->next_ = nullptr;
+	node_t* create_or_push_front (node_t* list, const void* data) {
+		node_t* nd = new node_t;
+		nd->data_  = data;
+		nd->next_  = list;
+		list = nd; 
 
 		return list;
 	}
@@ -51,17 +53,6 @@ namespace list {
 		list->next_ = tmp;
 		tmp->data_  = data;
 		tmp->next_  = nullptr;
-	}
-
-
-	void push_front (node_t** list, const void* data) {
-		assert (list);
-		assert (*list);
-
-		node_t* nd = new node_t;
-		nd ->data_ = data;
-		nd->next_  = *list;
-		*list = nd; 
 	}
 
 
@@ -91,7 +82,7 @@ namespace list {
 
 	void print_list (const node_t* list) {
 		assert (list);
-		const node_t* loop_begin;
+		const node_t* loop_begin = nullptr;
 		unsigned loop_size  = find_loop (list, &loop_begin);
 
 		while (list && loop_begin != list) {
@@ -189,13 +180,44 @@ namespace list {
 	node_t* copy (const node_t* list) {
 		assert (list);
 
-		node_t* new_list = create_list (list->data_);
+		node_t* new_list = create_or_push_front (nullptr, list->data_);
 		list = list->next_;
 
 		while (list) {
-			push_front (&new_list, list->data_);
+			new_list = create_or_push_front (new_list, list->data_);
 			list = list->next_;
 		}
 		return new_list;
+	}
+
+
+	unsigned find_loop_bitlabel (const node_t* list, const node_t** loop_begin) {
+		assert (list);
+
+		node_t* cur = const_cast<node_t*> (list);
+		while (cur->next_ && ! (reinterpret_cast<intptr_t> (cur->next_) & 1)) {
+			node_t* next = const_cast<node_t*> (cur->next_);
+			cur->next_   = const_cast<node_t*> (reinterpret_cast<const node_t*> (reinterpret_cast<intptr_t> (cur->next_) | 1));
+			cur = next;
+		}
+
+		node_t* loop = cur;
+		if (!loop->next_)
+			return 0;
+
+		cur = const_cast<node_t*> (list);
+		while (reinterpret_cast<intptr_t> (cur->next_) & 1) {
+			cur->next_ = const_cast<node_t*> (reinterpret_cast<const node_t*> (reinterpret_cast<intptr_t> (cur->next_) & ~1));
+			cur = cur->next_;
+		}
+
+		unsigned length = 1u;
+		for (cur = loop->next_; cur != loop; cur = cur->next_)
+			length++;
+
+		if (loop_begin)
+			*loop_begin = loop;
+
+		return length;
 	}
 }

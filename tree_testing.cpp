@@ -36,7 +36,7 @@ int main () {
 	printf ("calculate_length time %lf\n", duration);
 
 	start = std::clock();
-	printf ("2) way lengh  %d\n", length_bitlabel (fst1, snd1));
+	printf ("2) way lengh  %d\n", length_bitlabel (const_cast<tree_t*> (fst1), const_cast<tree_t*> (snd1)));
 	duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
 	printf ("length_bitlabel  time %lf\n", duration);
 
@@ -54,7 +54,7 @@ int main () {
 	printf ("calculate_length time %lf\n", duration);
 
 	start = std::clock();
-	printf ("2) way lengh  %d\n", length_bitlabel (fst1, snd2));
+	printf ("2) way lengh  %d\n", length_bitlabel (const_cast<tree_t*> (fst1), const_cast<tree_t*> (snd2)));
 	duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
 	printf ("length_bitlabel  time %lf\n", duration);
 

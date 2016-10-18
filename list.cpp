@@ -191,13 +191,13 @@ namespace list {
 	}
 
 
-	unsigned find_loop_bitlabel (const node_t* list, const node_t** loop_begin) {
+	unsigned find_loop_bitlabel (node_t* list, const node_t** loop_begin) {
 		assert (list);
 
-		node_t* cur = const_cast<node_t*> (list);
+		node_t* cur = list;
 		while (cur->next_ && ! (reinterpret_cast<intptr_t> (cur->next_) & 1)) {
-			node_t* next = const_cast<node_t*> (cur->next_);
-			cur->next_   = const_cast<node_t*> (reinterpret_cast<const node_t*> (reinterpret_cast<intptr_t> (cur->next_) | 1));
+			node_t* next = cur->next_;
+			cur->next_   = reinterpret_cast<node_t*> (reinterpret_cast<intptr_t> (cur->next_) | 1);
 			cur = next;
 		}
 
@@ -205,9 +205,9 @@ namespace list {
 		if (!loop->next_)
 			return 0;
 
-		cur = const_cast<node_t*> (list);
+		cur =list;
 		while (reinterpret_cast<intptr_t> (cur->next_) & 1) {
-			cur->next_ = const_cast<node_t*> (reinterpret_cast<const node_t*> (reinterpret_cast<intptr_t> (cur->next_) & ~1));
+			cur->next_ = reinterpret_cast<node_t*> (reinterpret_cast<intptr_t> (cur->next_) & ~1);
 			cur = cur->next_;
 		}
 

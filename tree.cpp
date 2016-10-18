@@ -222,14 +222,14 @@ namespace tree {
 	}
 
 
-	int length_bitlabel (const tree_t* fst, const tree_t* snd) {
+	int length_bitlabel (tree_t* fst, tree_t* snd) {
 		assert (fst);
 		assert (snd);
 
-		tree_t* cur = const_cast<tree_t*> (fst);
+		tree_t* cur = fst;
 		while (cur) {
 			tree_t* next = cur->parent_;
-			cur->parent_ = const_cast<tree_t*> (reinterpret_cast<const tree_t*> (reinterpret_cast<intptr_t> (cur->parent_) | 1));
+			cur->parent_ = reinterpret_cast<tree_t*> (reinterpret_cast<intptr_t> (cur->parent_) | 1);
 			cur = next;
 		}
 
@@ -238,14 +238,14 @@ namespace tree {
 		for (; common_vertex && ! (reinterpret_cast<intptr_t> (common_vertex->parent_) & 1); common_vertex = common_vertex->parent_)
 			length++; 
 
-		cur = const_cast<tree_t*> (fst);
+		cur = fst;
 		bool flag = false;
 		while (cur && (reinterpret_cast<intptr_t> (cur->parent_) & 1)) {
 			if (cur == common_vertex)
 				flag = true;
 			if (!flag)
 				length++;
-			cur->parent_ = const_cast<tree_t*> (reinterpret_cast<const tree_t*> (reinterpret_cast<intptr_t> (cur->parent_) & ~1));
+			cur->parent_ = reinterpret_cast<tree_t*> (reinterpret_cast<intptr_t> (cur->parent_) & ~1);
 			cur = cur->parent_;
 		}
 

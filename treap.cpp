@@ -25,6 +25,9 @@ namespace treap {
 	static 		  void 				dsf_make_set		(treap_t* vert);
 	static 		  void 				dsf_union			(treap_t* v1, treap_t* v2);
 	static  	  treap_t*			dsf_find			(treap_t* vert);
+	static 		  void 				sort_requests		(unsigned* fst, unsigned* snd, unsigned size);
+	static 		  void 				quick_sort			(unsigned* a, unsigned* b, unsigned n);
+	static 		  long 				binarysearch 		(unsigned val, unsigned* array, unsigned n);
 
 
 
@@ -187,13 +190,59 @@ namespace treap {
 	}
 
 
-	void tarjan_olca (treap_t* treap, unsigned* fst, unsigned* snd, int* answers, unsigned size) {
-		assert (treap);
+	static void quick_sort (unsigned* a, unsigned* b, unsigned n) {
+		assert (a);
+		assert (b);
+	 
+	    long i = 0;
+	    long j = n;
+	 
+	    unsigned p = a[n >> 1];
+
+	    do {
+	        while (i < n && a[i] < p) i++;
+	        while (j > 0 && a[j] > p) j--;
+	 
+	        if (i <= j) {
+	            unsigned tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+	            		 tmp = b[i]; b[i] = b[j]; b[j] = tmp;
+	            i++; j--;
+	        }
+	    } while (i <= j);
+	 
+	    if (j > 0) 
+	    	quick_sort (a, b, j);
+	    if (n > i) 
+	    	quick_sort (a + i, b + i, n - i);
+	}
+
+
+	static long binarysearch (unsigned val, unsigned* array, unsigned n) {
+		assert (array);
+
+	    long low = 0;
+	    long high = static_cast<long> (n - 1);
+	    long middle = 0;
+
+	    while (low <= high) {
+	        middle = (low + high) / 2;
+	        if (val < array[middle])
+	            high = middle - 1;
+	        else if (val > array[middle])
+	            low = middle + 1;
+	        else {
+	        	while (middle > 0 && val == array[middle-1])
+	        		middle--;
+	            return static_cast<unsigned> (middle);
+	        }
+	    }
+	    return -1;
+	}
+
+	static void sort_requests (unsigned* fst, unsigned* snd, unsigned size) {
 		assert (fst);
 		assert (snd);
-		assert (answers);
 
-		// todo: sort_requests (fst, snd);
 		for (unsigned i = 0; i < size; i++) {
 			if (fst[i] < snd[i]) {
 				unsigned tmp = fst[i];
@@ -202,22 +251,32 @@ namespace treap {
 			}
 		}
 
+		quick_sort (fst, snd, size - 1);
+	}
+
+
+	void tarjan_olca (treap_t* treap, unsigned* fst, unsigned* snd, int* answers, unsigned size) {
+		assert (treap);
+		assert (fst);
+		assert (snd);
+		assert (answers);
+
+		sort_requests (fst, snd, size);
+		
 		int* lca = new int[size];
 		dfs_olca (treap, fst, snd, answers, size, lca);
 
-		printin_dot (treap);
-
+		printf ("test answers\n");
 		for (unsigned i = 0; i < size; i++) {
-			// printf ("idxs: %u -- %u\ttarjan olca %d\n",fst[i], snd[i], answers[i]);
 			int min = find_min (treap, fst[i], snd[i]);
-			// printf ("treap lca %d\n", min); 
-			assert (min == answers[i]);
+			if (min != answers[i]) {
+				printf ("%u\t%d\t%d\n", i, min, answers[i]);
+				assert (min == answers[i]);
+			}
 		}
-
-		// todo: check and print
+		printf ("successful\n");
 
 		delete[] lca;
-
 	}
 
 
@@ -243,25 +302,9 @@ namespace treap {
 		}
 		#undef DFS_OLCA
 
-		for (unsigned i = 0; i < size; i++)
-			if (fst[i] == treap->idx_) {
-				// printf ("saving answers vertex_idx - %u\tidxs %u -- %u\n\t", treap->idx_, fst[i], snd[i]);
-				// printf ("fst");
-				// for (unsigned i = 0; i < size; i++)
-				// 	printf ("  %u", fst[i]);
-				// printf ("\n\tsnd");
-				// for (unsigned i = 0; i < size; i++)
-				// 	printf ("  %u", snd[i]);
-				// printf ("\n\tlca");
-				// for (unsigned i = 0; i < size; i++)
-				// 	printf ("  %d", lca[i]);
-				// printf ("\n");
-				treap_t* vert = get_vert_from_idx (treap, snd[i]);
-				assert (vert);
-				// printf ("\tvert idx %u\n\n", vert->idx_); 
-				answers[i] = lca[dsf_find (vert)->idx_];
-
-			}
+		long cur = binarysearch (treap->idx_, fst, size);
+		for (;cur >= 0 && cur < size && fst[cur] == treap->idx_; cur++)
+			answers[cur] = lca[dsf_find (get_vert_from_idx (treap, snd[cur]))->idx_];
 	}
 
 

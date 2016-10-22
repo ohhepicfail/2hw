@@ -16,6 +16,7 @@ namespace list {
 	unsigned 	find_loop			 (const node_t* list, const node_t** loop_begin);
 	node_t*		copy				 (const node_t* list);
 	unsigned	find_loop_bitlabel	 (node_t* list, const node_t** loop_begin);
+	void		turn_off_loop_check	 ();
 }
 
 

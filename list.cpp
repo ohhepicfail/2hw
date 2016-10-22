@@ -12,12 +12,19 @@ namespace list {
 		const void* data_;
 	};
 
+	bool _CHEKING_LIST_ = true;
+
+	void turn_off_loop_check () {
+		_CHEKING_LIST_ = false;
+	}
 
 	void delete_list (node_t* list) {
 		assert (list);
 
 		const node_t* loop_begin = nullptr;
-		unsigned loop_size  = find_loop (list, &loop_begin);
+		unsigned loop_size = 0;
+		if (_CHEKING_LIST_)
+			loop_size  = find_loop (list, &loop_begin);
 
 		while (list && loop_begin != list) {
 			node_t* tmp = list->next_;
@@ -67,8 +74,10 @@ namespace list {
 		assert (list);
 		assert (*list);
 
-		unsigned loop_size  = find_loop (*list, nullptr);
-		assert ( ! loop_size);
+		if (_CHEKING_LIST_) {
+			unsigned loop_size  = find_loop (*list, nullptr);
+			assert ( ! loop_size);
+		}
 
 		const void* res = (*list)->data_;
 
@@ -82,8 +91,11 @@ namespace list {
 
 	void print_list (const node_t* list) {
 		assert (list);
+		
 		const node_t* loop_begin = nullptr;
-		unsigned loop_size  = find_loop (list, &loop_begin);
+		unsigned loop_size = 0;
+		if (_CHEKING_LIST_)
+			loop_size  = find_loop (list, &loop_begin);
 
 		while (list && loop_begin != list) {
 			printf ("%p\t", list->data_);

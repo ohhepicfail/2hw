@@ -23,6 +23,7 @@ namespace treap {
 
 	treap_t* create_treap (const int* data, unsigned size) {
 		assert (data);
+		list::turn_off_loop_check ();
 
 		treap_t* prev = new treap_t;
 		prev->data_ = data[0];

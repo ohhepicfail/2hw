@@ -1,6 +1,7 @@
 #include <ctime>
 #include <cstdio>
 #include <cstdlib>
+#include <cassert>
 #include "treap.h"
 
 #define PRINT 0
@@ -32,13 +33,19 @@ int main () {
 			fst = snd;
 			snd = tmp;
 		}
+
 		#if PRINT
 			printf ("\nfst = %u\t snd = %u\n%d\t", fst, snd, find_min (treap, fst, snd));
 		#endif
-		find_min (treap, fst, snd);
+
+		int min = find_min (treap, fst, snd);
+		for (; i % 1000 == 0 && fst <= snd; fst++)
+			assert (data[fst] >= min);
 	}
 
 	printf ("end\n");
 	delete[] data;
 	delete_treap (treap);
+
+	return 0;
 }

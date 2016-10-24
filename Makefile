@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -c -Wall -Wextra -Wpedantic -g3 -std=c++14 -pg
+CXXFLAGS = -c -Wall -Wextra -Wpedantic -g3 -std=c++14 -pg -O2
 
 all: list tree treap clean	
 

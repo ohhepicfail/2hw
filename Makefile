@@ -9,8 +9,8 @@ tree: tree.o list.o tree_testing.o
 list: list_testing.o list.o
 	$(CXX) list_testing.o list.o -o list
 
-treap: list.o treap.o treap_testing.o
-	$(CXX) list.o treap.o treap_testing.o -o treap -pg
+treap: queue.o treap.o treap_testing.o
+	$(CXX) queue.o treap.o treap_testing.o -o treap -pg
 
 list_testing.o: list_testing.cpp
 	$(CXX) $(CXXFLAGS) list_testing.cpp
@@ -29,6 +29,9 @@ treap.o: treap.cpp
 
 treap_testing.o: treap_testing.cpp
 	$(CXX) $(CXXFLAGS) treap_testing.cpp
+
+queue.o :queue.cpp
+	$(CXX) $(CXXFLAGS) queue.cpp
 
 clean:
 	rm -rf *.o

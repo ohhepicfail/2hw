@@ -9,7 +9,7 @@
 using namespace treap;
 
 int main () {
-	const unsigned n = 1000000;
+	const unsigned n = 10000000;
 	int* data = new int[n];
 
 	srand (time (nullptr));
@@ -25,15 +25,16 @@ int main () {
 	#endif
 
 	printf ("begin\n");
-	unsigned* fst = new unsigned[n];
-	unsigned* snd = new unsigned[n];
-	for (unsigned i = 0; i < n; i++) {
-		fst[i] = rand () % n;
-		snd[i] = rand () % n;
+	unsigned nrequest = n*10;
+	unsigned* fst = new unsigned[nrequest];
+	unsigned* snd = new unsigned[nrequest];
+	for (unsigned i = 0; i < nrequest; i++) {
+		fst[i] = rand () % 256;
+		snd[i] = rand () % 256;
 	}
-	int* ans = new int[n] ();
+	int* ans = new int[nrequest] ();
 
-	tarjan_olca (treap, fst, snd, ans, n);
+	tarjan_olca (treap, fst, snd, ans, nrequest);
 
 	printf ("end\n");
 	delete[] data;

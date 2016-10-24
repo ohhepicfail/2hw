@@ -1,6 +1,7 @@
 #include <cassert>
 #include <cstdio>
 #include <cstdint>
+#include <ctime>
 #include "treap.h"
 #include "queue.h"
 
@@ -258,11 +259,18 @@ namespace treap {
 		assert (snd);
 		assert (answers);
 
+		std::clock_t start;
+		start = std::clock();
+
 		sort_requests (fst, snd, size);
 		
 		int* lca = new int[size];
 		dfs_olca (treap, fst, snd, answers, size, lca);
 
+		double duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
+		printf ("Tarjan time %lf\n", duration);
+
+		start = std::clock();
 		printf ("test answers\n");
 		for (unsigned i = 0; i < size; i++) {
 			int min = find_min (treap, fst[i], snd[i]);
@@ -271,6 +279,8 @@ namespace treap {
 				assert (min == answers[i]);
 			}
 		}
+		duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
+		printf ("Treap time %lf\n", duration);
 		printf ("successful\n");
 
 		delete[] lca;

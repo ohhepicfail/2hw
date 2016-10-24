@@ -19,15 +19,19 @@ namespace treap {
 	};
 
 
-	static inline void				write_dot_file		(FILE* file, const treap_t* treap);
-	static inline treap_t*			get_vert_from_idx	(treap_t* treap, unsigned idx);
-	static 		  void				dfs_olca	   		(treap_t* treap, unsigned* fst, unsigned* snd, int* answers, unsigned size, int* lca);
-	static 		  void 				dsf_make_set		(treap_t* vert);
-	static 		  void 				dsf_union			(treap_t* v1, treap_t* v2);
-	static  	  treap_t*			dsf_find			(treap_t* vert);
-	static 		  void 				sort_requests		(unsigned* fst, unsigned* snd, unsigned size);
-	static 		  void 				quick_sort			(unsigned* a, unsigned* b, unsigned n);
-	static 		  long 				binarysearch 		(unsigned val, unsigned* array, unsigned n);
+	namespace dsf {
+	static void 	make_set 	  (treap_t* vert);
+	static void 	union_by_rank (treap_t* v1, treap_t* v2);
+	static treap_t* find 	 	  (treap_t* vert);
+	}
+
+
+	static inline void	   write_dot_file		(FILE* file, const treap_t* treap);
+	static inline treap_t* get_vert_from_idx	(treap_t* treap, unsigned idx);
+	static 		  void	   dfs_olca	   			(treap_t* treap, unsigned* fst, unsigned* snd, int* answers, unsigned size, int* lca);
+	static 		  void 	   sort_requests		(unsigned* fst, unsigned* snd, unsigned size);
+	static 		  void 	   quick_sort			(unsigned* a, unsigned* b, unsigned n);
+	static 		  long 	   binarysearch 		(unsigned val, unsigned* array, unsigned n);
 
 
 
@@ -287,59 +291,64 @@ namespace treap {
 		assert (answers);
 		assert (lca);
 
-		dsf_make_set (treap);
+		using namespace dsf;
+
+		make_set (treap);
 		lca[treap->idx_] = treap->data_;
 		#define DFS_OLCA( x )	dfs_olca (x, fst, snd, answers, size, lca)
 		if (treap->left_) {
 			DFS_OLCA (treap->left_);
-			dsf_union (treap, treap->left_);
-			lca[dsf_find (treap)->idx_] = treap->data_;
+			union_by_rank (treap, treap->left_);
+			lca[find (treap)->idx_] = treap->data_;
 		}
 		if (treap->right_) {
 			DFS_OLCA (treap->right_);
-			dsf_union (treap, treap->right_);
-			lca[dsf_find (treap)->idx_] = treap->data_;
+			union_by_rank (treap, treap->right_);
+			lca[find (treap)->idx_] = treap->data_;
 		}
 		#undef DFS_OLCA
 
 		long cur = binarysearch (treap->idx_, fst, size);
 		for (;cur >= 0 && cur < size && fst[cur] == treap->idx_; cur++)
-			answers[cur] = lca[dsf_find (get_vert_from_idx (treap, snd[cur]))->idx_];
+			answers[cur] = lca[find (get_vert_from_idx (treap, snd[cur]))->idx_];
 	}
 
 
-	static void dsf_make_set (treap_t* vert) {
-		assert (vert);
+	namespace dsf {
 
-		vert->lcaparent_ = vert;
-		vert->rank_ = 0;
-	}
+		static void make_set (treap_t* vert) {
+			assert (vert);
 
-
-	static void dsf_union (treap_t* v1, treap_t* v2) {
-		assert (v1);
-		assert (v2);
-
-		treap_t* v1_root = dsf_find (v1);
-		treap_t* v2_root = dsf_find (v2);
-
-		if 		(v1_root->rank_ > v2_root->rank_)
-			v2_root->lcaparent_ = v1_root;
-		else if (v1_root->rank_ < v2_root->rank_)
-			v1_root->lcaparent_ = v2_root;
-		else {
-			v2_root->lcaparent_ = v1_root;
-			v1_root->rank_++;
+			vert->lcaparent_ = vert;
+			vert->rank_ = 0;
 		}
-	}
 
 
-	static treap_t* dsf_find (treap_t* vert) {
-		assert (vert);
+		static void union_by_rank (treap_t* v1, treap_t* v2) {
+			assert (v1);
+			assert (v2);
 
-		if (vert->lcaparent_ != vert)
-			vert->lcaparent_ = dsf_find (vert->lcaparent_);
+			treap_t* v1_root = find (v1);
+			treap_t* v2_root = find (v2);
 
-		return vert->lcaparent_;
+			if 		(v1_root->rank_ > v2_root->rank_)
+				v2_root->lcaparent_ = v1_root;
+			else if (v1_root->rank_ < v2_root->rank_)
+				v1_root->lcaparent_ = v2_root;
+			else {
+				v2_root->lcaparent_ = v1_root;
+				v1_root->rank_++;
+			}
+		}
+
+
+		static treap_t* find (treap_t* vert) {
+			assert (vert);
+
+			if (vert->lcaparent_ != vert)
+				vert->lcaparent_ = find (vert->lcaparent_);
+
+			return vert->lcaparent_;
+		}
 	}
 }

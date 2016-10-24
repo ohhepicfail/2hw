@@ -2,7 +2,7 @@
 #include <cstdio>
 #include <cstdint>
 #include "treap.h"
-#include "list.h"
+#include "queue.h"
 
 
 namespace treap {
@@ -37,7 +37,6 @@ namespace treap {
 
 	treap_t* create_treap (const int* data, unsigned size) {
 		assert (data);
-		list::turn_off_loop_check ();
 
 		treap_t* prev = new treap_t;
 		prev->data_ = data[0];
@@ -126,27 +125,21 @@ namespace treap {
 	void delete_treap (treap_t* treap) {
 		assert (treap);
 
-		using namespace list;
+		using namespace queue;
 
-		node_t* in  = create_or_push_front (nullptr, treap);
-		node_t* out = nullptr;
+		queue_t* verts = create_or_push (nullptr, treap);
 
-		while ( ! is_empty (in) || ! is_empty (out)) {
-			if (is_empty (out)) {
-				out = copy (in);
-				delete_list (in);
-				in = nullptr;
-			}
-
-			const treap_t* cur = static_cast<const treap_t*> (pop_front (&out));
-
+		while (!is_empty (verts)) {
+			const treap_t* cur = static_cast<const treap_t*> (pop (verts));
 			if (cur->left_)
-				in = create_or_push_front (in, cur->left_);
+				verts = create_or_push (verts, cur->left_);
 			if (cur->right_)
-				in = create_or_push_front (in, cur->right_);
+				verts = create_or_push (verts, cur->right_);
 
-			delete cur;
-		}	
+			delete cur; 
+		}
+
+		delete_queue (verts);
 	}
 
 

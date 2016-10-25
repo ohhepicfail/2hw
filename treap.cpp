@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <cstdint>
 #include <ctime>
+#include <cstdlib>
 #include "treap.h"
 #include "queue.h"
 
@@ -20,19 +21,25 @@ namespace treap {
 	};
 
 
+	namespace query {
+		struct query_t {
+			unsigned fst_;
+			unsigned snd_;
+			int ans_;
+		};
+	}
+
+
 	namespace dsf {
-	static void 	make_set 	  (treap_t* vert);
-	static void 	union_by_rank (treap_t* v1, treap_t* v2);
-	static treap_t* find 	 	  (treap_t* vert);
+		static void 	make_set 	  (treap_t* vert);
+		static void 	union_by_rank (treap_t* v1, treap_t* v2);
+		static treap_t* find 	 	  (treap_t* vert);
 	}
 
 
 	static inline void	   write_dot_file		(FILE* file, const treap_t* treap);
 	static inline treap_t* get_vert_from_idx	(treap_t* treap, unsigned idx);
-	static 		  void	   dfs_olca	   			(treap_t* treap, unsigned* fst, unsigned* snd, int* answers, unsigned size, int* lca);
-	static 		  void 	   sort_requests		(unsigned* fst, unsigned* snd, unsigned size);
-	static 		  void 	   quick_sort			(unsigned* a, unsigned* b, unsigned n);
-	static 		  long 	   binarysearch 		(unsigned val, unsigned* array, unsigned n);
+	static 		  void	   dfs_olca	   			(treap_t* treap, query::query_t* q, unsigned size, int* lca);
 
 
 
@@ -144,11 +151,11 @@ namespace treap {
 	}
 
 
-	int find_min (treap_t* treap, unsigned fst, unsigned snd) {
+	int find_min (treap_t* treap, const query::query_t& q) {
 		assert (treap);
 
-		treap_t* tfst = get_vert_from_idx (treap, fst);
-		treap_t* tsnd = get_vert_from_idx (treap, snd);
+		treap_t* tfst = get_vert_from_idx (treap, q.fst_);
+		treap_t* tsnd = get_vert_from_idx (treap, q.snd_);
 
 		treap_t* cur = tfst;
 		while (cur) {
@@ -188,95 +195,33 @@ namespace treap {
 	}
 
 
-	static void quick_sort (unsigned* a, unsigned* b, unsigned n) {
-		assert (a);
-		assert (b);
-	 
-	    long i = 0;
-	    long j = n;
-	 
-	    unsigned p = a[n >> 1];
-
-	    do {
-	        while (i < n && a[i] < p) i++;
-	        while (j > 0 && a[j] > p) j--;
-	 
-	        if (i <= j) {
-	            unsigned tmp = a[i]; a[i] = a[j]; a[j] = tmp;
-	            		 tmp = b[i]; b[i] = b[j]; b[j] = tmp;
-	            i++; j--;
-	        }
-	    } while (i <= j);
-	 
-	    if (j > 0) 
-	    	quick_sort (a, b, j);
-	    if (n > i) 
-	    	quick_sort (a + i, b + i, n - i);
-	}
-
-
-	static long binarysearch (unsigned val, unsigned* array, unsigned n) {
-		assert (array);
-
-	    long low = 0;
-	    long high = static_cast<long> (n - 1);
-	    long middle = 0;
-
-	    while (low <= high) {
-	        middle = (low + high) / 2;
-	        if (val < array[middle])
-	            high = middle - 1;
-	        else if (val > array[middle])
-	            low = middle + 1;
-	        else {
-	        	while (middle > 0 && val == array[middle-1])
-	        		middle--;
-	            return static_cast<unsigned> (middle);
-	        }
-	    }
-	    return -1;
-	}
-
-	static void sort_requests (unsigned* fst, unsigned* snd, unsigned size) {
-		assert (fst);
-		assert (snd);
-
-		for (unsigned i = 0; i < size; i++) {
-			if (fst[i] < snd[i]) {
-				unsigned tmp = fst[i];
-				fst[i] = snd[i];
-				snd[i] = tmp;
-			}
-		}
-
-		quick_sort (fst, snd, size - 1);
-	}
-
-
-	void tarjan_olca (treap_t* treap, unsigned* fst, unsigned* snd, int* answers, unsigned size) {
+	void tarjan_olca (treap_t* treap, query::query_t* q, unsigned size) {
 		assert (treap);
-		assert (fst);
-		assert (snd);
-		assert (answers);
+		assert (q);
 
 		std::clock_t start;
 		start = std::clock();
 
-		sort_requests (fst, snd, size);
-		
-		int* lca = new int[size];
-		dfs_olca (treap, fst, snd, answers, size, lca);
+		query::sort (q, size);
 
 		double duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
+		printf ("Sort time %lf\n", duration);
+		
+		start = std::clock ();
+		int* lca = new int[size];
+		dfs_olca (treap, q, size, lca);
+
+		duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
 		printf ("Tarjan time %lf\n", duration);
+		
 
 		start = std::clock();
 		printf ("test answers\n");
 		for (unsigned i = 0; i < size; i++) {
-			int min = find_min (treap, fst[i], snd[i]);
-			if (min != answers[i]) {
-				printf ("%u\t%d\t%d\n", i, min, answers[i]);
-				assert (min == answers[i]);
+			int min = find_min (treap, q[i]);
+			if (min != q[i].ans_) {
+				printf ("%u\t%d\t%d\n", i, min, q[i].ans_);
+				assert (min == q[i].ans_);
 			}
 		}
 		duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
@@ -287,18 +232,16 @@ namespace treap {
 	}
 
 
-	void dfs_olca (treap_t* treap, unsigned* fst, unsigned* snd, int* answers, unsigned size, int* lca) {
+	void dfs_olca (treap_t* treap, query::query_t* q, unsigned size, int* lca) {
 		assert (treap);
-		assert (fst);
-		assert (snd);
-		assert (answers);
+		assert (q);
 		assert (lca);
 
 		using namespace dsf;
 
 		make_set (treap);
 		lca[treap->idx_] = treap->data_;
-		#define DFS_OLCA( x )	dfs_olca (x, fst, snd, answers, size, lca)
+		#define DFS_OLCA( x )	dfs_olca (x, q, size, lca)
 		if (treap->left_) {
 			DFS_OLCA (treap->left_);
 			union_by_rank (treap, treap->left_);
@@ -311,9 +254,9 @@ namespace treap {
 		}
 		#undef DFS_OLCA
 
-		long cur = binarysearch (treap->idx_, fst, size);
-		for (;cur >= 0 && cur < size && fst[cur] == treap->idx_; cur++)
-			answers[cur] = lca[find (get_vert_from_idx (treap, snd[cur]))->idx_];
+		long cur = query::binary_search (q, treap->idx_, size);
+		for (;cur >= 0 && cur < size && q[cur].fst_ == treap->idx_; cur++)
+			q[cur].ans_ = lca[find (get_vert_from_idx (treap, q[cur].snd_))->idx_];
 	}
 
 
@@ -352,6 +295,96 @@ namespace treap {
 				vert->lcaparent_ = find (vert->lcaparent_);
 
 			return vert->lcaparent_;
+		}
+	}
+
+
+	namespace query {
+
+		query_t* create (unsigned size) {
+			query_t* q = new query_t[size];
+
+			return q;
+		}
+
+
+		void set (query_t* q, unsigned idx, unsigned value1, unsigned value2) {
+			assert (q);
+			if (value1 < value2) {
+				unsigned tmp = value1;
+				value1 = value2;
+				value2 = tmp;
+			}
+
+			q[idx].fst_ = value1;
+			q[idx].snd_ = value2;
+		}
+
+
+		int get_answer (query_t* q, unsigned idx) {
+			assert (q);
+
+			return q[idx].ans_;
+		}
+
+
+		void print (query_t* q, unsigned size) {
+			for (unsigned i = 0; i < size; i++)
+				printf ("(%u,%u)\t", q[i].fst_, q[i].snd_);
+			printf ("\n");
+		}
+
+
+		void delete_query (query_t* q) {
+			delete[] q;
+		}
+
+
+		int sort_cmp (const void * x1, const void * x2) {
+			const query_t* q1 = static_cast<const query_t*> (x1);
+			const query_t* q2 = static_cast<const query_t*> (x2);
+			if (q1->fst_ == q2->fst_) {
+				if (q1->snd_ == q2->snd_)
+					return 0;
+				if (q1->snd_ < q2->snd_)
+					return -1;
+				return 1;
+
+			}
+			if (q1->fst_ < q2->fst_)
+				return -1;
+			return 1;
+		}
+
+
+		void sort (query_t* q, unsigned size) {
+			assert (q);
+
+			qsort (q, size, sizeof (query_t), sort_cmp);
+		}
+
+		int bsearch_cmp (const void * x1, const void * x2) {
+			const query_t* q1 = static_cast<const query_t*> (x1);
+			const query_t* q2 = static_cast<const query_t*> (x2);
+			if (q1->fst_ == q2->fst_)
+				return 0;
+			if (q1->fst_ < q2->fst_)
+				return -1;
+			return 1;
+		}
+
+
+		long binary_search (query_t* q, unsigned val, unsigned size) {
+			assert (q);
+
+			query_t qval = {val, 0, 0};
+			query_t* item = static_cast<query_t*> (bsearch (&qval, q, size, sizeof (query_t), bsearch_cmp));
+			if (!item)
+				return -1;
+			long idx = (item - q);
+			while (idx > 0 && q[idx].fst_ == q[idx - 1].fst_)
+				idx--;
+			return idx;
 		}
 	}
 }

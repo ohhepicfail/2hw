@@ -7,7 +7,6 @@ namespace suffix_tree {
 
 	vertex* build (const char* text);
 	// void    delete_suffix_tree  (vertex* root);
-	void trysuff ();
 	void print (const vertex* root, const char* str);
 
 }

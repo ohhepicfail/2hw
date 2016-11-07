@@ -43,7 +43,7 @@ namespace suffix_tree {
 
     namespace ap {
         static inline void set (active_point* ap, unsigned symb_idx, vertex* v, unsigned depth);
-        static inline void inc_depth (active_point* ap, unsigned symb_idx);
+        static inline void inc_depth (active_point* ap);
     }
 
 
@@ -86,7 +86,7 @@ namespace suffix_tree {
 
 
     namespace ap {
-        
+
         static inline void set (active_point* ap, unsigned symb_idx, vertex* v, unsigned depth) {
             assert (v);
             assert (ap);
@@ -97,7 +97,7 @@ namespace suffix_tree {
         }
 
 
-        static inline void inc_depth (active_point* ap, unsigned symb_idx) {
+        static inline void inc_depth (active_point* ap) {
             assert (ap);
             ap->depth_++;
         }
@@ -111,13 +111,12 @@ namespace suffix_tree {
 
         ap::active_point* act_p = new ap::active_point;
         ap::set (act_p, 0, root, ap::VERTEX);
-        unsigned i = 0;
-        for (; text[i] != '\0'; i++) { 
-            ap::inc_depth (act_p, i);
+        for (unsigned i = 0; text[i] != '\0'; i++) { 
+            ap::inc_depth (act_p);
             canonize (act_p, text);
             update   (act_p, text);
         }
-        ap::inc_depth (act_p, i);
+        ap::inc_depth (act_p);
         canonize (act_p, text);
         update   (act_p, text);
 

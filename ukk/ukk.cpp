@@ -1,288 +1,326 @@
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <string>
-#include <cmath>
 #include <cassert>
 #include <climits>
+#include <unordered_map>
+#include <list>
 #include "ukk.h"
 
 namespace suffix_tree {
 
-    namespace chlist {
-
-        struct children_list {
-            unsigned begin_, end_;
-            vertex* child_;
-            children_list* next_;
+    namespace chld {
+        struct child {
+            unsigned begin_;
+            unsigned end_;
+            vertex* to_;
         };
-
-        static inline children_list* push_front (children_list* chl, unsigned begin, unsigned end, vertex* vert);
-        static inline void           delete_l   (children_list* chl);
-
     }
+
 
     struct vertex {
-        chlist::children_list* child_;
+        std::unordered_map<char, chld::child*> childs_;
+        vertex* suffix_link_;
     };
 
+    namespace ap {
+        struct active_point {
+            unsigned ch_idx_;
+            vertex* vert_;
+            unsigned depth_;
+        };
 
-    static inline unsigned  get_file_size           (const char* filename);
-    static inline char*     read_file               (const char* filename, unsigned fsize);
-    static inline unsigned  count_numbers           (unsigned n);
-    static inline char*     concatenate_strings_v1  (const char* strings, unsigned tsize);
-    static inline char*     concatenate_strings_v2  (const char* strings, unsigned tsize);
-    static inline vertex*   add                     (vertex* root,  const char* str, unsigned begin, unsigned end);
-    static inline vertex*   choose_vert_and_add     (vertex* root,  const char* str, unsigned begin, unsigned end);
-    static inline vertex*   split                   (unsigned vert1_begin, unsigned vert2_begin, unsigned vert2_end, vertex* vert2);
-    static inline void      print_tree              (const vertex* vert, unsigned tabs, const char* str);
+        enum depth_key {
+            VERTEX = 0,
+            LIST = 1
+        };
+    }
 
 
-    namespace chlist {
+    namespace chld {
+        static inline void add (char ch, vertex* vert, unsigned begin, unsigned end, vertex* chld_vert); 
+        static inline child* find (char ch, vertex* vert);
+        static inline child* create (unsigned begin, unsigned end, vertex* child);
+    }
 
-        static inline children_list* push_front (children_list* chl, unsigned begin, unsigned end, vertex* vert) {
-            children_list* new_ch = new children_list;
-            new_ch->begin_ = begin;
-            new_ch->end_   = end;
-            new_ch->child_ = vert;
-            new_ch->next_  = chl;
 
-            return new_ch;
+    namespace ap {
+        static inline void set (active_point* ap, unsigned symb_idx, vertex* v, unsigned depth);
+        static inline void inc_depth (active_point* ap, unsigned symb_idx);
+    }
+
+
+    static inline vertex* init_tree ();
+    static inline void canonize (ap::active_point* ap, const char* str); 
+    static inline void update (ap::active_point* ap, const char* str);
+    static inline vertex* add (ap::active_point* ap, bool* end_point, const char* str);
+
+
+    namespace chld {
+
+        static inline child* create (unsigned begin, unsigned end, vertex* chld) {
+            child* ch  = new child;
+            ch->to_    = chld;
+            ch->begin_ = begin;
+            ch->end_   = end;
+
+            return ch;
         }
 
 
-        static inline void delete_l (children_list* chl) {
-            for (children_list* tmp = nullptr; chl; chl = tmp) {
-                tmp = chl->next_;
-                delete_suffix_tree (chl->child_);
-                delete chl;
-            }
+        static inline void add (char ch, vertex* vert, unsigned begin, unsigned end, vertex* chld_vert) {
+            assert (vert);
+
+            vert->childs_.insert (std::make_pair (ch, create (begin, end, chld_vert)));
         }
 
-    }
 
+        static inline child* find (char ch, vertex* vert) {
+            assert (vert);
 
-    static inline unsigned get_file_size (const char* filename) {
-        assert (filename);
-        FILE* f = fopen (filename, "r");
-        assert (f);
-
-        fseek (f, 0, SEEK_END);
-        unsigned fsize = ftell (f);
-        fseek (f, 0, SEEK_END);
-
-        fclose (f);
-        return fsize + 1;
-    }
-
-
-    static inline char* read_file (const char* filename, unsigned fsize) {
-        assert (filename);
-        FILE* f = fopen (filename, "r");
-        assert (f);
-
-        char* text = new char[fsize];
-        fread (text, fsize - 1, sizeof (char), f);
-        text[fsize - 1] = '\0';
-
-        fclose (f);
-        return text;
-    }
-
-
-    static inline unsigned count_numbers (unsigned n) {
-        unsigned counter = 0;
-        while (n > 0) {
-            n /= 10;
-            counter++;
+            auto res = vert->childs_.find (ch);
+            if (res == vert->childs_.end ())
+                return nullptr;
+            return res->second;
         }
 
-        return counter;
+
     }
 
-    static inline char* concatenate_strings_v1 (const char* strings, unsigned tsize) {
-        assert (strings);
 
-        unsigned extra_symb = 0;
-        for (unsigned i = 0; i < tsize; ++i)
-            if (strings[i] == '\n')
-                extra_symb++;
+    namespace ap {
+        static inline void set (active_point* ap, unsigned symb_idx, vertex* v, unsigned depth) {
+            assert (v);
+            assert (ap);
 
-        unsigned extra_size = 0;
-        for (unsigned i = 1; i <= extra_symb; i++)
-                extra_size += count_numbers (i);
-
-        char* text = new char[tsize + extra_size];
-
-        for (unsigned i = 0, j = 0; i < tsize; ++i) {
-
-            if (strings[i] == '\n') {
-                text[j++] = '\\';
-                strcpy (text + j, std::to_string (extra_symb).c_str ());
-                j += count_numbers (extra_symb);
-                extra_symb--;
-            } 
-
-            else
-                text[j++] = strings[i];
+            ap->ch_idx_ = symb_idx;
+            ap->vert_   = v;
+            ap->depth_  = depth;
         }
 
-        return text;
-    }
 
+        static inline void inc_depth (active_point* ap, unsigned symb_idx) {
+            assert (ap);
 
-    static inline char* concatenate_strings_v2 (const char* strings, unsigned tsize) {
-        assert (strings);
-
-        unsigned extra_symb = 0;
-        for (unsigned i = 0; i < tsize; ++i)
-            if (strings[i] == '\n')
-                extra_symb++;
-
-        char* text = new char[tsize - extra_symb];
-        for (unsigned i = 0, j = 0; i < tsize; i++)
-            if (strings[i] != '\n')
-                text[j++] = strings[i];
-
-        return text;
-    }
-
-
-    char* get_text_for_ukk (const char* filename) {
-        assert (filename);
-        unsigned fsize = get_file_size (filename);
-        char* text = read_file (filename, fsize);
-        printf ("\n\nYour text:\n%s\n\n", text);
-        // char* text2 = concatenate_strings_v1 (text, fsize);
-        char* text2 = concatenate_strings_v2 (text, fsize);
-        printf ("Your text after concatenation:\n%s\n\n", text2);
-
-        delete[] text;
-        return text2;
-    }
-
-    static inline vertex* add (vertex* root, const char* str, unsigned begin, unsigned end) {
-        assert (str);
-
-        if (!root) {
-            root = new vertex;
-            root->child_ = chlist::push_front (nullptr, 0, UINT_MAX, nullptr);
+            // if (ap->depth_ == VERTEX)
+            //     ap->ch_idx_ = symb_idx;
+            ap->depth_++;
         }
-        else
-            for (; begin <= end; begin++)
-                root = choose_vert_and_add (root, str, begin, end);      
-
-        return root;
     }
 
 
-    static inline vertex* choose_vert_and_add (vertex* root,  const char* str, unsigned begin, unsigned end) {
-        assert (root);
-        assert (str);
-
-        chlist::children_list* cur = root->child_;
-        while (cur && str[cur->begin_] != str[begin])
-            cur = cur->next_;
-
-        if (!cur) 
-           root->child_ = chlist::push_front (root->child_, begin, UINT_MAX, nullptr); 
-        // list
-        else if (cur->end_ == UINT_MAX) {
-            bool all_the_same = true;
-            unsigned i = begin;
-            unsigned j = cur->begin_;
-            for (; i <= end; i++, j++)
-                if (str[i] != str[j]) {
-                    all_the_same = false;
-                    break;
-                }
-
-            assert (!cur->child_);
-            if (!all_the_same) {
-                cur->child_ = split (i, j, UINT_MAX, nullptr);
-                cur->end_ = j;
-            }
-        }
-        // not a list
-        else {
-            unsigned i = begin;
-            unsigned j = cur->begin_;
-            bool all_the_same = true;
-            for (; j < cur->end_ && i <= end; i++, j++)
-                if (str[i] != str[j]) {
-                    all_the_same = false;
-                    break;
-                }
-
-            assert (cur->child_);
-            if (!all_the_same)
-                cur->child_ = split (i, j, cur->end_, cur->child_);
-            else if (j == cur->end_)
-                cur->child_ = choose_vert_and_add (cur->child_, str, i, end);
-        }
-
-        return root;
-    }
-
-
-    static inline vertex* split (unsigned vert1_begin, unsigned vert2_begin, unsigned vert2_end, vertex* vert2) {
-        vertex* vert = new vertex;
-        vert->child_ = chlist::push_front (nullptr, vert1_begin, UINT_MAX,  nullptr);
-        vert->child_ = chlist::push_front (vert->child_, vert2_begin, vert2_end, vert2);
-
-        return vert;
-    }
-
-
-    vertex* build_suffix_tree (const char* text) {
+    vertex* build (const char* text) {
         assert (text);
 
-        vertex* root = nullptr;
+        vertex* root  = init_tree ();
+
+        ap::active_point* act_p = new ap::active_point;
+        ap::set (act_p, 0, root, ap::VERTEX);
         unsigned i = 0;
-        for (; text[i] != '\0'; i++) {
-            root = add (root, text, 0, i);
-            // printf ("\n\n%u\n", i);
-            // print_suffix_tree (root, text);
+        for (; text[i] != '\0'; i++) { 
+            ap::inc_depth (act_p, i);
+            canonize (act_p, text);
+            update   (act_p, text);
         }
-        // printf ("\n\nLast\n");
-        root = add (root, text, 0, i); 
+        print (root, text);
+        printf ("depth %u  |  ich %u %c |  root %d  |  vert %u\n", act_p->depth_, act_p->ch_idx_, text[act_p->ch_idx_], root, act_p->vert_);
+        ap::inc_depth (act_p, i);
+        canonize (act_p, text);
+        printf ("ok\n");
+        printf ("depth %u  |  ich %u %c |  root %d  |  vert %u\n", act_p->depth_, act_p->ch_idx_, text[act_p->ch_idx_], root, act_p->vert_);
+        update   (act_p, text);
+
+        delete act_p;
+        return root;
+    }
+
+
+    static inline vertex* init_tree () {
+        vertex* dummy = new vertex;
+        vertex* root  = new vertex;
+
+        root->suffix_link_ = dummy;
+        dummy->suffix_link_   = dummy;
+
+        for (char ch = SCHAR_MIN; ch < SCHAR_MAX; ch++)
+            chld::add (ch, dummy, 0, 1, root);
 
         return root;
     }
 
 
-    void delete_suffix_tree (vertex* root) {
-        if (root)
-            delete_l (root->child_);
-        delete root;
-    }
+    static inline void canonize (ap::active_point* ap, const char* str) {
+        assert (ap);
+        assert (str);
 
+        unsigned& depth = ap->depth_;
 
-    void print_suffix_tree (const vertex* root, const char* str) {
-        assert (root);
+        // if (depth == ap::LIST && ap->vert_ && ap->vert_->childs_.size () == 255) {          //freak!!!!!!!!!!!!!!!!!
+        //     ap->depth_ = ap::VERTEX;
+        //     ap->vert_ = ap->vert_->childs_.find ('a')->second->to_;
 
-        print_tree (root, 0, str);
-    }
+        // }
+        while (depth != ap::VERTEX /*&& depth != ap::LIST*/) {
+            unsigned ich = ap->ch_idx_;
+            chld::child* chld = chld::find (str[ich], ap->vert_);
 
-
-    static inline void print_tree (const vertex* vert, unsigned tabs, const char* str) {
-        assert (vert);
-
-        chlist::children_list* cur = vert->child_;
-
-        while (cur) {
-            for (unsigned i = 0; i < tabs; i++)
-                printf ("\t");
-
-            printf ("[%u -- %u)\t", cur->begin_, cur->end_);
-            for (unsigned i = cur->begin_; (cur->end_ < UINT_MAX) ? i < cur->end_ : str[i] != '\0'; i++)
-                printf ("%c", str[i]);
-            printf ("\n");
-            if (cur->child_)
-                print_tree (cur->child_, tabs + 1, str);
-
-            cur = cur->next_;
+            /*if (!chld) {
+                ap->ch_idx_++;
+                ap->depth_--;
+                return;
+            }
+            else*/ if (chld && chld->end_ <= chld->begin_ + depth) {
+                for (unsigned i = 1; i < chld->end_ - chld->begin_; i++)
+                    if (str[i + chld->begin_] != str[i + ich])
+                        return;
+                depth = depth - (chld->end_ - chld->begin_);
+                ap->vert_ = chld->to_;
+                ap->ch_idx_ = ich + chld->end_ - chld->begin_;
+            } 
+            else
+                return;
         }
     }
 
+
+    static inline void update (ap::active_point* ap, const char* str) {
+        assert (ap);
+        assert (str);
+
+        vertex* prev_v = nullptr;
+        bool end = false;
+
+        while (1) {
+            vertex* new_v = add (ap, &end, str);
+
+            printf ("\ndepth %u  |  ich %u %c |  vert %u\n", ap->depth_, ap->ch_idx_, str[ap->ch_idx_], ap->vert_);
+            if (new_v)
+                printf ("vertex created\n");
+             if (!new_v)
+                printf ("vertex did't create\n");
+            if (prev_v) {
+                if (!new_v /*&& prev_v != ap->vert_*/)                  /// ??????????????????//
+                    new_v = ap->vert_;
+                prev_v->suffix_link_ = new_v;
+            }
+
+            prev_v = new_v;
+
+            if (end)
+                break;
+
+            ap->vert_ = ap->vert_->suffix_link_;
+            printf ("\tsuffix link %u\n", ap->vert_);
+
+            // if (prev_v)
+            //     prev_v->suffix_link_ = ap->vert_;           ///// ???????????????????????????
+            canonize (ap, str);
+        }
+    }
+
+
+    static inline vertex* add (ap::active_point* ap, bool* end_point, const char* str) {
+        assert (ap);
+        assert (end_point);
+        assert (str);
+
+        if (!ap->depth_) {
+            // ap->depth_++;
+            *end_point = true;
+            return ap->vert_;
+        }
+
+        chld::child* chld = chld::find (str[ap->ch_idx_], ap->vert_);
+        if (!chld) {
+            printf ("depth %u\tich %u\n", ap->depth_, ap->ch_idx_);
+            // assert (ap->depth_ == ap::LIST);
+            if (ap->depth_ != ap::LIST) {
+                ap->depth_--;
+                ap->ch_idx_++;
+            }
+            chld::add (str[ap->ch_idx_], ap->vert_, ap->ch_idx_, UINT_MAX, nullptr);
+            return nullptr;
+        }
+        
+        unsigned depth = ap->depth_;
+        assert (depth);
+        depth--;
+        if (str[chld->begin_ + depth] == str[ap->ch_idx_ + depth]) {
+            *end_point = true;
+            return nullptr;
+        }
+
+        vertex* new_v = new vertex;
+        new_v->suffix_link_ = nullptr;
+        chld::add (str[chld->begin_ + depth], new_v, chld->begin_ + depth, chld->end_, chld->to_);
+        chld::add (str[ap->ch_idx_ + depth], new_v, ap->ch_idx_ + depth, UINT_MAX, nullptr);
+        chld->end_ = chld->begin_ + depth;
+        chld->to_ = new_v;
+
+        return  new_v;
+    }
+
+
+    void print (const vertex* root, const char* str) {
+        assert (root);
+        assert (str);
+
+        FILE * dot_file = fopen ("dump_suffix_tree.dot", "wb");
+        assert (dot_file);
+
+        fprintf (dot_file, "digraph tree\n{\n");
+
+        struct nvert {
+            unsigned n_;
+            const vertex* vert_;
+        };
+
+        unsigned counter = 0;
+        std::list<nvert> verts {{counter, root}};
+
+        while (!verts.empty ()) {
+            nvert cur = verts.front ();
+            verts.pop_front ();
+
+            if (!cur.vert_) {
+                fprintf (dot_file, "\t%u [label = \"\"]\n", cur.n_);
+                fprintf (dot_file, "\t%u [shape = plaintext]\n", cur.n_);
+                continue;
+            }
+            else 
+                fprintf (dot_file, "\t%u [label = \"\"]\n", cur.n_);
+
+            for (const auto &pair : cur.vert_->childs_) {
+                counter++;
+                chld::child* chld = pair.second;
+                printf ("%c\t", pair.first);
+                printf ("\t%u->%u [label = \"[%u...%u)\"]\t%lu\t", cur.n_, counter, chld->begin_, chld->end_, chld->to_);
+                if (chld->to_)
+                    printf ("suffix_link %u\n", chld->to_->suffix_link_);
+                else
+                    printf ("\n");
+                fprintf (dot_file, "\t%u->%u [label =\"", cur.n_, counter);
+                for (auto i = chld->begin_; i < chld->end_ && str[i] != '\0'; i++)
+                     fprintf (dot_file, "%c", str[i]);
+                  fprintf (dot_file, "\n[%u..%u)\"]\n", chld->begin_, chld->end_);
+                // fprintf (dot_file, "\t%u->%u [label = \"[%u...%u)\"]\n", cur.n_, counter, chld->begin_, chld->end_);
+                verts.push_back ({counter, chld->to_});
+            } 
+        }
+
+        fprintf (dot_file, "}\n");
+        fclose (dot_file);
+    }
+
+
+    void trysuff () {
+        vertex* v1 = new vertex;
+        vertex* v2 = new vertex;
+        chld::child* ch1 = chld::create (1, 9, v2);
+        chld::child* ch2 = chld::create (2, 11, nullptr);
+        chld::child* ch3 = chld::create (0, 3, nullptr);
+        v1->childs_.insert (std::make_pair ('a', ch1));
+        v1->childs_.insert (std::make_pair ('s', ch2));
+        ch1->to_->childs_.insert (std::make_pair ('d', ch3));
+
+        print (v1, "hello");
+    }
 }
+

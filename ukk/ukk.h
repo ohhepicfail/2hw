@@ -6,8 +6,9 @@ namespace suffix_tree {
 	struct vertex;
 
 	vertex* build (const char* text);
-	// void    delete_suffix_tree  (vertex* root);
-	void print (const vertex* root, const char* str);
+	void    clean (vertex* root);
+	void 	print (const vertex* root, const char* str);
+	bool	test  (const vertex* root, const char* str, unsigned* chb, unsigned* che);
 
 }
 

@@ -35,22 +35,22 @@ namespace suffix_tree {
 
 
     namespace chld {
-        static inline void add (char ch, vertex* vert, unsigned begin, unsigned end, vertex* chld_vert); 
-        static inline child* find (char ch, vertex* vert);
+        static inline void   add    (char ch, vertex* vert, unsigned begin, unsigned end, vertex* chld_vert); 
+        static inline child* find   (char ch, const vertex* vert);
         static inline child* create (unsigned begin, unsigned end, vertex* child);
     }
 
 
     namespace ap {
-        static inline void set (active_point* ap, unsigned symb_idx, vertex* v, unsigned depth);
+        static inline void set       (active_point* ap, unsigned symb_idx, vertex* v, unsigned depth);
         static inline void inc_depth (active_point* ap);
     }
 
 
     static inline vertex* init_tree ();
-    static inline void canonize (ap::active_point* ap, const char* str); 
-    static inline void update (ap::active_point* ap, const char* str);
-    static inline vertex* add (ap::active_point* ap, bool* end_point, const char* str);
+    static inline void    canonize  (ap::active_point* ap, const char* str); 
+    static inline void    update    (ap::active_point* ap, const char* str);
+    static inline vertex* add       (ap::active_point* ap, bool* end_point, const char* str);
 
 
     namespace chld {
@@ -72,7 +72,7 @@ namespace suffix_tree {
         }
 
 
-        static inline child* find (char ch, vertex* vert) {
+        static inline child* find (char ch, const vertex* vert) {
             assert (vert);
 
             auto res = vert->childs_.find (ch);
@@ -275,6 +275,73 @@ namespace suffix_tree {
 
         fprintf (dot_file, "}\n");
         fclose (dot_file);
+    }
+
+
+    void clean (vertex* root) {
+        if (!root)
+            return;
+
+        vertex* dummy = root->suffix_link_;
+        for (const auto &pair : dummy->childs_)
+            delete pair.second;
+        delete dummy;
+
+
+        std::list<vertex*> verts {root};
+
+        while (!verts.empty ()) {
+            vertex* cur = verts.front ();
+            verts.pop_front ();
+
+            for (const auto &pair : cur->childs_) {
+                chld::child* chld = pair.second;
+                if (chld->to_)
+                    verts.push_back (chld->to_); 
+                delete chld;
+            }  
+
+            delete cur;         
+        }
+    }
+
+
+    bool test (const vertex* root, const char* str, unsigned* chb, unsigned* che) {
+        assert (root);
+        assert (str);
+
+        for (unsigned ich = 0; str[ich] != '\0'; ich++) {
+            const vertex* vert = root;
+            unsigned cur = ich;
+            bool substr_done = false;
+            *chb = ich;
+            while (!substr_done) {
+                *che = cur;
+                chld::child* chld = chld::find (str[cur], vert);
+                if (!chld)
+                    return false;
+
+                for (auto i = chld->begin_; i < chld->end_; i++) {
+
+                    if (str[cur] != str[i]) {
+                        *che = cur;
+                        return false;
+                    }
+
+                    if (str[cur] == '\0') {
+                        substr_done = true;
+                        break;
+                    }
+
+                    cur++;
+                }
+
+                if (!substr_done)
+                    vert = chld->to_;
+            }
+        }
+
+        return true;
     }
 }
 

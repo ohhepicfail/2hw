@@ -48,7 +48,7 @@ namespace suffix_tree {
 
 
     static inline vertex* init_tree ();
-    static inline void    canonize  (ap::active_point* ap, const char* str); 
+    static inline vertex* canonize  (ap::active_point* ap, const char* str); 
     static inline void    update    (ap::active_point* ap, const char* str);
     static inline vertex* add       (ap::active_point* ap, bool* end_point, const char* str);
 
@@ -103,7 +103,7 @@ namespace suffix_tree {
         }
     }
 
-
+    vertex*ROOT;
     vertex* build (const char* text) {
         assert (text);
 
@@ -111,13 +111,21 @@ namespace suffix_tree {
 
         ap::active_point* act_p = new ap::active_point;
         ap::set (act_p, 0, root, ap::VERTEX);
+        ROOT = root;
         for (unsigned i = 0; text[i] != '\0'; i++) { 
             ap::inc_depth (act_p);
             canonize (act_p, text);
+            // printf ("ich %u  |  depth %u  |  vert  %u\n", act_p->ch_idx_, act_p->depth_, act_p->vert_);
+            // printf ("root? %d\n", root == act_p->vert_);
+            // print (root, text);
             update   (act_p, text);
         }
+        // print (root, text);
+        // printf ("\n\nich %u  |  depth %u  |  vert  %u\n", act_p->ch_idx_, act_p->depth_, act_p->vert_);
         ap::inc_depth (act_p);
         canonize (act_p, text);
+        // printf ("ich %u  |  depth %u  |  vert  %u\n", act_p->ch_idx_, act_p->depth_, act_p->vert_);
+        // printf ("root? %d\n", root == act_p->vert_);
         update   (act_p, text);
 
         delete act_p;
@@ -139,27 +147,31 @@ namespace suffix_tree {
     }
 
 
-    static inline void canonize (ap::active_point* ap, const char* str) {
+    static inline vertex* canonize (ap::active_point* ap, const char* str) {
         assert (ap);
         assert (str);
 
         unsigned& depth = ap->depth_;
 
+        vertex* vert_for_suff_link = nullptr;
         while (depth != ap::VERTEX) {
             unsigned ich = ap->ch_idx_;
             chld::child* chld = chld::find (str[ich], ap->vert_);
 
+            if (depth == ap::LIST)
+                vert_for_suff_link = ap->vert_;
             if (chld && chld->end_ <= chld->begin_ + depth) {
                 for (unsigned i = 1; i < chld->end_ - chld->begin_; i++)
                     if (str[i + chld->begin_] != str[i + ich])
-                        return;
+                        return vert_for_suff_link;
                 depth = depth - (chld->end_ - chld->begin_);
                 ap->vert_ = chld->to_;
                 ap->ch_idx_ = ich + chld->end_ - chld->begin_;
             } 
             else
-                return;
+                return vert_for_suff_link;
         }
+        return vert_for_suff_link;
     }
 
 
@@ -177,7 +189,7 @@ namespace suffix_tree {
                 vertex* tmp_v = new_v;
                 if (!tmp_v)    
                     tmp_v = ap->vert_;
-                if (prev_v != ap->vert_)
+                if (prev_v != ap->vert_ && ap->depth_ != 0)
                     prev_v->suffix_link_ = tmp_v;
             }
 
@@ -186,10 +198,13 @@ namespace suffix_tree {
             if (end)
                 break;
 
+            // print (ROOT, str);
             if (prev_v)
                 prev_v->suffix_link_ = ap->vert_;
             ap->vert_ = ap->vert_->suffix_link_;
-            canonize (ap, str);
+            vertex* sf_link = canonize (ap, str);
+            if (sf_link && prev_v)
+                prev_v->suffix_link_ = sf_link;
         }
     }
 

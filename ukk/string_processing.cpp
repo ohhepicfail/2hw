@@ -103,10 +103,8 @@ namespace str_proc {
         assert (filename);
         unsigned fsize = get_file_size (filename);
         char* text = read_file (filename, fsize);
-        printf ("\n\nYour text:\n%s\n\n", text);
 
         char* text2 = concatenate_strings_v2 (text, fsize);
-        printf ("Your text after concatenation:\n%s\n\n", text2);
 
         delete[] text;
         return text2;

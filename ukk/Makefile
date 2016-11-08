@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS= -c -Wall -Wextra -Wpedantic -std=c++14 -g3
+CXXFLAGS= -c -Wall -Wextra -Wpedantic -std=c++14 -g3 -O2
 
 all: ukk clean
 	./ukk

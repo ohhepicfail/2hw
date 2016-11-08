@@ -115,17 +115,10 @@ namespace suffix_tree {
         for (unsigned i = 0; text[i] != '\0'; i++) { 
             ap::inc_depth (act_p);
             canonize (act_p, text);
-            // printf ("ich %u  |  depth %u  |  vert  %u\n", act_p->ch_idx_, act_p->depth_, act_p->vert_);
-            // printf ("root? %d\n", root == act_p->vert_);
-            // print (root, text);
             update   (act_p, text);
         }
-        // print (root, text);
-        // printf ("\n\nich %u  |  depth %u  |  vert  %u\n", act_p->ch_idx_, act_p->depth_, act_p->vert_);
         ap::inc_depth (act_p);
         canonize (act_p, text);
-        // printf ("ich %u  |  depth %u  |  vert  %u\n", act_p->ch_idx_, act_p->depth_, act_p->vert_);
-        // printf ("root? %d\n", root == act_p->vert_);
         update   (act_p, text);
 
         delete act_p;
@@ -185,22 +178,15 @@ namespace suffix_tree {
         while (1) {
             vertex* new_v = add (ap, &end, str);
 
-            if (prev_v) {
-                vertex* tmp_v = new_v;
-                if (!tmp_v)    
-                    tmp_v = ap->vert_;
+            if (prev_v && new_v)
                 if (prev_v != ap->vert_ && ap->depth_ != 0)
-                    prev_v->suffix_link_ = tmp_v;
-            }
+                    prev_v->suffix_link_ = new_v;
 
             prev_v = new_v;
 
             if (end)
                 break;
 
-            // print (ROOT, str);
-            if (prev_v)
-                prev_v->suffix_link_ = ap->vert_;
             ap->vert_ = ap->vert_->suffix_link_;
             vertex* sf_link = canonize (ap, str);
             if (sf_link && prev_v)
@@ -321,7 +307,7 @@ namespace suffix_tree {
     }
 
 
-    bool test (const vertex* root, const char* str, unsigned* chb, unsigned* che) {
+    bool test (const vertex* root, const char* str) {
         assert (root);
         assert (str);
 
@@ -329,19 +315,15 @@ namespace suffix_tree {
             const vertex* vert = root;
             unsigned cur = ich;
             bool substr_done = false;
-            *chb = ich;
             while (!substr_done) {
-                *che = cur;
                 chld::child* chld = chld::find (str[cur], vert);
                 if (!chld)
                     return false;
 
                 for (auto i = chld->begin_; i < chld->end_; i++) {
 
-                    if (str[cur] != str[i]) {
-                        *che = cur;
+                    if (str[cur] != str[i])
                         return false;
-                    }
 
                     if (str[cur] == '\0') {
                         substr_done = true;

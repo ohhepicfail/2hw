@@ -1,4 +1,4 @@
-#include <cassert>
+#include <cstdio>
 #include "ukk.h"
 #include "string_processing.h"
 
@@ -12,10 +12,12 @@ int main () {
 
     vertex* suffix_tree = build (text);
     print (suffix_tree, text);
-    // trysuff ();
-    assert (suffix_tree);
+    unsigned chb,che;
+    bool is_ok = test (suffix_tree, text, &chb, &che);
+    if (!is_ok)
+    	printf ("something go wrong! chb %u %c  che %u %c\n", chb, text[chb], che, text[che]);
 
-    // delete_suffix_tree (suffix_tree);
+    clean (suffix_tree);
     delete[] text;    
     return 0;
 }

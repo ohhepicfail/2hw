@@ -8,7 +8,7 @@ namespace suffix_tree {
 	vertex* build (const char* text);
 	void    clean (vertex* root);
 	void 	print (const vertex* root, const char* str);
-	bool	test  (const vertex* root, const char* str, unsigned* chb, unsigned* che);
+	bool	test  (const vertex* root, const char* str);
 
 }
 

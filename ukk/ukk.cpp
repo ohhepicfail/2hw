@@ -50,7 +50,7 @@ namespace suffix_tree {
     static inline vertex* init_tree ();
     static inline vertex* canonize  (ap::active_point* ap, const char* str); 
     static inline void    update    (ap::active_point* ap, const char* str);
-    static inline vertex* add       (ap::active_point* ap, bool* end_point, const char* str);
+    static inline vertex* add       (ap::active_point* ap, bool& end_point, const char* str);
 
 
     namespace chld {
@@ -103,7 +103,7 @@ namespace suffix_tree {
         }
     }
 
-    vertex*ROOT;
+
     vertex* build (const char* text) {
         assert (text);
 
@@ -111,7 +111,7 @@ namespace suffix_tree {
 
         ap::active_point* act_p = new ap::active_point;
         ap::set (act_p, 0, root, ap::VERTEX);
-        ROOT = root;
+
         for (unsigned i = 0; text[i] != '\0'; i++) { 
             ap::inc_depth (act_p);
             canonize (act_p, text);
@@ -176,7 +176,7 @@ namespace suffix_tree {
         bool end = false;
 
         while (1) {
-            vertex* new_v = add (ap, &end, str);
+            vertex* new_v = add (ap, end, str);
 
             if (prev_v && new_v)
                 if (prev_v != ap->vert_ && ap->depth_ != 0)
@@ -195,13 +195,12 @@ namespace suffix_tree {
     }
 
 
-    static inline vertex* add (ap::active_point* ap, bool* end_point, const char* str) {
+    static inline vertex* add (ap::active_point* ap, bool& end_point, const char* str) {
         assert (ap);
-        assert (end_point);
         assert (str);
 
         if (!ap->depth_) {
-            *end_point = true;
+            end_point = true;
             return ap->vert_;
         }
 
@@ -219,7 +218,7 @@ namespace suffix_tree {
         assert (depth);
         depth--;
         if (str[chld->begin_ + depth] == str[ap->ch_idx_ + depth]) {
-            *end_point = true;
+            end_point = true;
             return nullptr;
         }
 

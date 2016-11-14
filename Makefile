@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -c -Wall -Wextra -Wpedantic -g3 -std=c++14 -pg -O2
+CXXFLAGS = -Wall -Wextra -Wpedantic -g3 -std=c++14 -O2
 
 all: list tree treap clean	
 
@@ -10,7 +10,7 @@ list: list_testing.o list.o
 	$(CXX) list_testing.o list.o -o list
 
 treap: queue.o treap.o treap_testing.o
-	$(CXX) queue.o treap.o treap_testing.o -o treap -pg
+	$(CXX) queue.o treap.o treap_testing.o -o treap
 
 list_testing.o: list_testing.cpp
 	$(CXX) $(CXXFLAGS) list_testing.cpp

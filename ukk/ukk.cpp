@@ -15,8 +15,13 @@ namespace suffix_tree {
     }
 
 
+    /**
+     * @brief      Contains map with its children and suffix link to another vertex
+     * 
+     * @see        chld
+     */
     struct vertex {
-        std::unordered_map<char, chld::child*> childs_;
+        std::unordered_map<char, chld::child*> children_;
         vertex* suffix_link_;
     };
 
@@ -36,6 +41,10 @@ namespace suffix_tree {
 
 
     namespace bounds {
+
+        /**
+         * @brief      Contains array of the strings bounds and number of the strings
+         */
         struct str_bounds {
             unsigned* bounds_;
             unsigned  nstr_;
@@ -71,10 +80,49 @@ namespace suffix_tree {
     }
 
 
+    /**
+     * @brief      Creates root and dummy
+     *
+     * @return     Root
+     */
     static inline vertex* init_tree ();
+
+    /**
+     * @brief      Adds a string to the suffix tree
+     *
+     * @param[in]  root    Suffix tree root     
+     * @param[in]  fst_ch  First index of the string
+     * @param[in]  str     String
+     */
     static inline void    add_str   (vertex* root, unsigned fst_ch, const char* str);
+
+    /**
+     * @brief      Tries to canonize active point
+     *
+     * @param[in]  ap    Currrent active point  
+     * @param[in]  str   Current string on which to build a tree    
+     *
+     * @return     Suffix link for previous vertex
+     */
     static inline vertex* canonize  (ap::active_point* ap, const char* str); 
+
+    /**
+     * @brief      Walks on suffix links and tries to add vertices
+     *
+     * @param[in]  ap    Current active point
+     * @param[in]  str   Current string on which to build a tree  
+     */
     static inline void    update    (ap::active_point* ap, const char* str);
+
+    /**
+     * @brief      Adds new vertex, list or nothing. Decides when to stop current update
+     *
+     * @param[in]  ap         Current active point
+     * @param[out] end_point  True if update must be completed
+     * @param[in]  str        Current string on which to build a tree  
+     *
+     * @return     New vertex if function created it, old vertex if function found it or nullptr 
+     */
     static inline vertex* add       (ap::active_point* ap, bool& end_point, const char* str);
 
 
@@ -93,15 +141,15 @@ namespace suffix_tree {
         static inline void add (char ch, vertex* vert, unsigned begin, unsigned end, vertex* chld_vert) {
             assert (vert);
 
-            vert->childs_.insert (std::make_pair (ch, create (begin, end, chld_vert)));
+            vert->children_.insert (std::make_pair (ch, create (begin, end, chld_vert)));
         }
 
 
         static inline child* find (char ch, const vertex* vert) {
             assert (vert);
 
-            auto res = vert->childs_.find (ch);
-            if (res == vert->childs_.end ())
+            auto res = vert->children_.find (ch);
+            if (res == vert->children_.end ())
                 return nullptr;
             return res->second;
         }
@@ -297,7 +345,7 @@ namespace suffix_tree {
             else 
                 fprintf (dot_file, "\t%u [label = \"\"]\n", cur.n_);
 
-            for (const auto &pair : cur.vert_->childs_) {
+            for (const auto &pair : cur.vert_->children_) {
                 counter++;
                 chld::child* chld = pair.second;
                 fprintf (dot_file, "\t%u->%u [label =\"", cur.n_, counter);
@@ -321,7 +369,7 @@ namespace suffix_tree {
             return;
 
         vertex* dummy = root->suffix_link_;
-        for (const auto &pair : dummy->childs_)
+        for (const auto &pair : dummy->children_)
             delete pair.second;
         delete dummy;
 
@@ -332,7 +380,7 @@ namespace suffix_tree {
             vertex* cur = verts.front ();
             verts.pop_front ();
 
-            for (const auto &pair : cur->childs_) {
+            for (const auto &pair : cur->children_) {
                 chld::child* chld = pair.second;
                 if (chld->to_)
                     verts.push_back (chld->to_); 
@@ -462,7 +510,7 @@ namespace suffix_tree {
                 contained = new unsigned[nstr] ();
 
             chld::child* child_for_idx = nullptr;
-            for (const auto &pair : vert->childs_) {
+            for (const auto &pair : vert->children_) {
 
                 chld::child* chld = pair.second;
                 child_for_idx = chld;

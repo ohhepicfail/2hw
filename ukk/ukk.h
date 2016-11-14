@@ -25,7 +25,7 @@ namespace suffix_tree {
 		str_bounds* 	set    (unsigned* bounds, unsigned nstrings);
 
 		/**
-		 * @brief      Delete allocated memory 
+		 * @brief      Deletes allocated memory 
 		 *
 		 * @param[in]  sb    str_bounds
 		 */
@@ -41,7 +41,7 @@ namespace suffix_tree {
 		unsigned		nstr   (const str_bounds* sb);
 
 		/**
-		 * @brief      Return array of the strings bounds
+		 * @brief      Returns array of the strings bounds
 		 *
 		 * @param[in]  sb    str_bounds 
 		 *
@@ -53,7 +53,7 @@ namespace suffix_tree {
 	struct vertex;
 
 	/**
-	 * @brief      Build suffix tree using Ukkonen's algorithm
+	 * @brief      Builds suffix tree using Ukkonen's algorithm
 	 *
 	 * @param[in]  text  Text that prepared for building tree
 	 * @param[in]  sb    Structure with infornation about text
@@ -86,16 +86,50 @@ namespace suffix_tree {
 	 * @param[in]  root  Suffix tree root
 	 * @param[in]  str   String
 	 *
-	 * @return     true if all suffixes have been found. Otherwise false
+	 * @return     True if all suffixes have been found. Otherwise false
 	 */
 	bool	test  (const vertex* root, const char* str);
 
+	/**
+	 * @brief  	   Contains fuctions and structures to work with common strings
+	 */
 	namespace common_str {
 		struct substr;
 		
+		/**
+		 * @brief      Searches common strings in suffix tree	
+		 *
+		 * @param[in]  root  Suffix tree root	
+		 * @param[in]  sb    Strings bounds
+		 * @param[in]  text  Current string on which tree was built
+		 *
+		 * @return     Searching results
+		 */
 		substr** find   (const vertex* root, const bounds::str_bounds* sb, const char* text);
+
+		/**
+		 * @brief      Returns first symbol index of common substring
+		 *
+		 * @param[in]  common  substr Structure with information about common substring
+		 *
+		 * @return     Index in string on which tree was built
+		 */
 		unsigned fst_ch (substr* common);
+
+		/**
+		 * @brief      Returns symbol index following the last of common substring
+		 *
+		 * @param[in]  common  substr Structure with information about common substring
+		 *
+		 * @return     Index in string on which tree was built
+		 */
 		unsigned lst_ch (substr* common);
+
+		/**
+		 * @brief      Deletes data in substr
+		 *
+		 * @param[in]  common  substr Structure with information about common substring
+		 */
 		void  	 clean  (substr** common);
 	}
 }

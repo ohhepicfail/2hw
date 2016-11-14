@@ -6,7 +6,14 @@
 
 namespace suffix_tree {
 
+    /**
+     * @brief      Cointains data about child and functions to work with it
+     */
     namespace chld {
+
+        /**
+         * @brief      Cointains data about child
+         */
         struct child {
             unsigned begin_;
             unsigned end_;
@@ -25,12 +32,20 @@ namespace suffix_tree {
         vertex* suffix_link_;
     };
 
-
+    /**
+     * @brief     Contains information about active point
+     * 
+     * @see Ukkonen's algorithm
+     */
     namespace ap {
+
+        /**
+         * @brief      Main figure in Ukkonen's algorithm
+         */
         struct active_point {
-            unsigned ch_idx_;
-            vertex* vert_;
-            unsigned depth_;
+            unsigned ch_idx_;   ///< Key in map
+            vertex* vert_;      ///< Current vertex
+            unsigned depth_;    ///< Current symbol index is depth_ + ch_idx_
         };
 
         enum depth_key {
@@ -53,29 +68,99 @@ namespace suffix_tree {
 
 
     namespace common_str {
+
+        /**
+         * @brief      Contains data about substring
+         */
         struct substr {
-            unsigned begin_;
-            unsigned end_;
-            unsigned rank_;
+            unsigned begin_;    ///< First symbol index of common substring
+            unsigned end_;      ///< Symbol index following the last of common substring
+            unsigned rank_;     ///< Number of strings where this substring were found
         };
     }
 
 
     namespace chld {
+
+        /**
+         * @brief      Adds new child
+         *
+         * @param[in]  ch         Key in map
+         * @param[out] vert       Vertex to which child will be added
+         * @param[in]  begin      First child index
+         * @param[in]  end        Last child index
+         * @param      chld_vert  Vertex that child is pointing
+         */
         static inline void   add    (char ch, vertex* vert, unsigned begin, unsigned end, vertex* chld_vert); 
+
+        /**
+         * @brief      Finds child in vertex 
+         *
+         * @param[in]  ch    Key 
+         * @param[in]  vert  Vertex
+         *
+         * @return     child or nullptr
+         */
         static inline child* find   (char ch, const vertex* vert);
+
+        /**
+         * @brief      Creates new child
+         *
+         * @param[in]  begin  First child index
+         * @param[in]  end    Last child index
+         * @param[in]  child  Vertex that child is pointing
+         *
+         * @return     New child
+         */
         static inline child* create (unsigned begin, unsigned end, vertex* child);
     }
 
 
     namespace ap {
+
+        /**
+         * @brief      Sets data in active point
+         *
+         * @param[out] ap        Current active point
+         * @param[in]  symb_idx  ch_idx_ in ap
+         * @param[in]  v         vert_ in ap
+         * @param[in]  depth     depth_ in ap
+         */
         static inline void set       (active_point* ap, unsigned symb_idx, vertex* v, unsigned depth);
+
+        /**
+         * @brief      Increases depth in active point
+         *
+         * @param      ap    active point
+         */
         static inline void inc_depth (active_point* ap);
     }
 
 
     namespace common_str {
+
+        /**
+         * @brief      Searches string number where this symbol were located
+         *
+         * @param[in]  sb    Strings bounds
+         * @param[in]  ich   Symbol index
+         *
+         * @return     Number of the string
+         */
         static inline unsigned  bsearch_str     (const bounds::str_bounds* sb, unsigned ich);
+        
+        /**
+         * @brief      Uses dfs to find common substrings
+         *
+         * @param[in]  vert        Vertex for dfs
+         * @param[in]  sb          Strings bounds
+         * @param      cstrs       Common strings
+         * @param[in]  text        Text on which tree was built
+         * @param[in]  cur_length  Current length or dfs deep   
+         * @param      contained   Array that contains data about lists in this vertex
+         *
+         * @return     Array that contains data about lists in this vertex -- contained
+         */
         static inline unsigned* common_str_dfs  (const vertex* vert, const bounds::str_bounds* sb, substr** cstrs, const char* text, unsigned cur_length = 0, unsigned* contained = nullptr);
     }
 
@@ -100,7 +185,7 @@ namespace suffix_tree {
      * @brief      Tries to canonize active point
      *
      * @param[in]  ap    Currrent active point  
-     * @param[in]  str   Current string on which to build a tree    
+     * @param[in]  str   Current string on which tree is being built    
      *
      * @return     Suffix link for previous vertex
      */
@@ -110,7 +195,7 @@ namespace suffix_tree {
      * @brief      Walks on suffix links and tries to add vertices
      *
      * @param[in]  ap    Current active point
-     * @param[in]  str   Current string on which to build a tree  
+     * @param[in]  str   Current string on which tree is being built
      */
     static inline void    update    (ap::active_point* ap, const char* str);
 
@@ -119,7 +204,7 @@ namespace suffix_tree {
      *
      * @param[in]  ap         Current active point
      * @param[out] end_point  True if update must be completed
-     * @param[in]  str        Current string on which to build a tree  
+     * @param[in]  str        Current string on which tree is being built
      *
      * @return     New vertex if function created it, old vertex if function found it or nullptr 
      */

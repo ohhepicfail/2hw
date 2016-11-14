@@ -124,7 +124,6 @@ namespace str_proc {
         char* text = read_file (filename, fsize);
 
         char* text2 = concatenate_strings_v1 (text, fsize, sb);
-        // char* text2 = concatenate_strings_v2 (text, fsize, sb);
 
         delete[] text;
         return text2;

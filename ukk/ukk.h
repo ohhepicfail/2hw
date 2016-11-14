@@ -12,21 +12,21 @@ namespace suffix_tree {
 		const unsigned*	get_sb (const str_bounds* sb);
 	}
 
-	// namespace common_str {
-		// struct substr;
-		
-	// 	substr** find   (const vertex* root, const bounds::str_bounds* sb);
-	// 	unsigned fst_ch (substr** common, unsigned common_idx);
-	// 	unsigned lst_ch (substr** common, unsigned common_idx);
-	// 	void  	 clean  (substr** common, unsigned size);
-	// }
-
 	struct vertex;
 
 	vertex* build (const char* text, const bounds::str_bounds* sb);
 	void    clean (vertex* root);
 	void 	print (const vertex* root, const char* str);
 	bool	test  (const vertex* root, const char* str);
+
+	namespace common_str {
+		struct substr;
+		
+		substr** find   (const vertex* root, const bounds::str_bounds* sb, const char* text);
+		unsigned fst_ch (substr* common);
+		unsigned lst_ch (substr* common);
+		void  	 clean  (substr** common);
+	}
 }
 
 #endif

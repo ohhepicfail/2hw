@@ -43,6 +43,15 @@ namespace suffix_tree {
     }
 
 
+    namespace common_str {
+        struct substr {
+            unsigned begin_;
+            unsigned end_;
+            unsigned rank_;
+        };
+    }
+
+
     namespace chld {
         static inline void   add    (char ch, vertex* vert, unsigned begin, unsigned end, vertex* chld_vert); 
         static inline child* find   (char ch, const vertex* vert);
@@ -53,6 +62,12 @@ namespace suffix_tree {
     namespace ap {
         static inline void set       (active_point* ap, unsigned symb_idx, vertex* v, unsigned depth);
         static inline void inc_depth (active_point* ap);
+    }
+
+
+    namespace common_str {
+        static inline unsigned  bsearch_str     (const bounds::str_bounds* sb, unsigned ich);
+        static inline unsigned* common_str_dfs  (const vertex* vert, const bounds::str_bounds* sb, substr** cstrs, const char* text, unsigned cur_length = 0, unsigned* contained = nullptr);
     }
 
 
@@ -364,7 +379,7 @@ namespace suffix_tree {
     }
 
 
-namespace bounds {
+    namespace bounds {
         str_bounds* set (unsigned* bounds, unsigned nstrings) {
             assert (bounds);
 
@@ -396,6 +411,151 @@ namespace bounds {
 
             return sb->bounds_;
         }
+    }
+
+
+    namespace common_str {
+
+        substr** find (const vertex* root, const bounds::str_bounds* sb, const char* text) {
+            assert (root);
+            assert (sb);
+            assert (text);
+
+            unsigned nstrings = bounds::nstr (sb);
+            substr** sub_strings = new substr*[nstrings + 1];
+            for (unsigned i = 0; i < nstrings + 1; i++) {
+                unsigned def = 0;
+                if (i == nstrings)
+                    def = UINT_MAX;
+                sub_strings[i] = new substr;
+                sub_strings[i]->begin_ = def;
+                sub_strings[i]->end_   = def;
+                sub_strings[i]->rank_  = def;
+            }
+
+            delete[] common_str_dfs (root, sb, sub_strings, text);
+
+            return sub_strings;
+        }
+
+
+        void clean (substr** common) {
+            assert (common);
+
+            unsigned i = 0;
+            for (; common[i]->rank_ != UINT_MAX; i++)
+                delete common[i];
+            delete common[i];
+
+            delete[] common;
+        }
+
+
+        static inline unsigned* common_str_dfs (const vertex* vert, const bounds::str_bounds* sb, substr** cstrs, const char* text, unsigned cur_length, unsigned* contained) {
+            assert (vert);
+            assert (sb);
+            assert (cstrs);
+            assert (text);
+
+            unsigned nstr = bounds::nstr (sb);
+            if (!contained)
+                contained = new unsigned[nstr] ();
+
+            chld::child* child_for_idx = nullptr;
+            for (const auto &pair : vert->childs_) {
+
+                chld::child* chld = pair.second;
+                child_for_idx = chld;
+
+                if (chld->to_) {
+                    unsigned* chld_contained = new unsigned[nstr] ();
+                    chld_contained = common_str_dfs (chld->to_, sb, cstrs, text, cur_length + chld->end_ - chld->begin_, chld_contained);
+
+                    for (unsigned i = 0; i < nstr; i++) 
+                        contained[i] = contained[i] ? 1 : chld_contained[i];
+
+                    delete[] chld_contained;
+                }
+                else {
+                    unsigned edge_idx = bsearch_str (sb, chld->begin_);
+                    contained[edge_idx] = 1;
+                }
+            }
+
+            unsigned nstr_cont = 0;
+            for (unsigned i = 0; i  < nstr; i++)
+                if (contained[i])
+                    nstr_cont++;
+
+            for (unsigned i = 0; i < nstr && nstr_cont > i; i++) {
+                unsigned commonstr_length = cstrs[i]->end_ - cstrs[i]->begin_;
+                unsigned ich = child_for_idx->begin_;
+                while (ich && (text[ich - 1] == '$' || text[ich - 1] == '/' || isdigit (text[ich - 1])))
+                    ich--;
+                if (cur_length < child_for_idx->begin_ - ich)
+                    continue;
+                unsigned substr_length = cur_length - (child_for_idx->begin_ - ich);
+                if (commonstr_length < substr_length || (cstrs[i]->rank_ < nstr_cont && commonstr_length == substr_length)) {
+                    cstrs[i]->rank_  = nstr_cont;
+                    cstrs[i]->begin_ = ich - substr_length;
+                    cstrs[i]->end_   = ich;
+                }
+            }
+
+            return contained;
+        }
+
+
+        static inline unsigned bsearch_str (const bounds::str_bounds* sb, unsigned ich) {
+            assert (sb);
+
+            unsigned nstr = bounds::nstr (sb);
+            const unsigned* bounds = bounds::get_sb (sb);
+
+            if (ich == UINT_MAX)
+                return nstr - 1;
+
+            unsigned fst = 0u;
+            unsigned lst = nstr - 1;
+            unsigned mid = 0u;
+
+            while (1) {
+                mid = (lst + fst) / 2;
+
+                if (bounds[mid] == ich)
+                    return mid;
+
+                if (bounds[mid] < ich) {
+                    if (mid >= nstr - 1 || bounds[mid + 1] > ich)
+                        return mid;
+
+                    fst = mid + 1;
+                }
+                else {
+                    if (bounds[mid - 1] < ich)
+                        return mid - 1;
+
+                    lst = mid - 1;
+                }
+            }
+
+            return UINT_MAX;
+        }
+
+
+        unsigned fst_ch (substr* common) {
+            assert (common);
+
+            return common->begin_;
+        }
+
+
+        unsigned lst_ch (substr* common) {
+            assert (common);
+
+            return common->end_;
+        }
+
     }
 
 }

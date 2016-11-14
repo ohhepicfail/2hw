@@ -8,23 +8,35 @@
 using namespace suffix_tree;
 using namespace str_proc;
 
+#define PRINT_TREE 0
+
 
 int main () {
     char fname[] = "strings.txt";
-    char* text = get_text_for_ukk (fname);
-    printf ("\n\ntext is ready\n\n");
+    bounds::str_bounds* bounds = nullptr;
+    char* text = get_text_for_ukk (fname, &bounds);
+    printf ("\n\ntext is ready\n");
 
-    vertex* suffix_tree = build (text);
+    vertex* suffix_tree = build (text, bounds);
     printf ("suffix tree created!\n\n");
 
-    print (suffix_tree, text);
-    bool is_ok = test (suffix_tree, text);
-    if (!is_ok)
-    	printf ("something go wrong!\n");
-    else
-    	printf ("all is ok\n\n");
+    #if PRINT_TREE
+        print (suffix_tree, text);
+    #endif
+
+    common_str::substr** cstrings = common_str::find (suffix_tree, bounds, text);
+    printf ("searching results:\n");
+    for (unsigned k = 1u; k < bounds::nstr (bounds); k++) {
+        printf ("\tk -- %u\t", k + 1);
+        for (unsigned i = common_str::fst_ch (cstrings[k]); i < common_str::lst_ch (cstrings[k]); i++)
+            printf ("%c", text[i]);
+        printf ("\n");
+    }
+
 
     clean (suffix_tree);
+    bounds::clean (bounds);
+    common_str::clean (cstrings);
     delete[] text;  
     return 0;
 }

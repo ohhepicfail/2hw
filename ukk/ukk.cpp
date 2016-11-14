@@ -20,6 +20,7 @@ namespace suffix_tree {
         vertex* suffix_link_;
     };
 
+
     namespace ap {
         struct active_point {
             unsigned ch_idx_;
@@ -30,6 +31,14 @@ namespace suffix_tree {
         enum depth_key {
             VERTEX = 0,
             LIST = 1
+        };
+    }
+
+
+    namespace bounds {
+        struct str_bounds {
+            unsigned* bounds_;
+            unsigned  nstr_;
         };
     }
 
@@ -48,6 +57,7 @@ namespace suffix_tree {
 
 
     static inline vertex* init_tree ();
+    static inline void    add_str   (vertex* root, unsigned fst_ch, const char* str);
     static inline vertex* canonize  (ap::active_point* ap, const char* str); 
     static inline void    update    (ap::active_point* ap, const char* str);
     static inline vertex* add       (ap::active_point* ap, bool& end_point, const char* str);
@@ -104,25 +114,35 @@ namespace suffix_tree {
     }
 
 
-    vertex* build (const char* text) {
+    vertex* build (const char* text, const bounds::str_bounds* sb) {
         assert (text);
 
         vertex* root  = init_tree ();
 
-        ap::active_point* act_p = new ap::active_point;
-        ap::set (act_p, 0, root, ap::VERTEX);
+		const unsigned* bounds = bounds::get_sb (sb);
+        unsigned nstr = bounds::nstr (sb);
 
-        for (unsigned i = 0; text[i] != '\0'; i++) { 
+        for (unsigned i = 0; i < nstr; i++)
+            add_str (root, bounds[i], text);
+
+        return root;
+    }
+
+
+	static inline void add_str (vertex* root, unsigned fst_ch, const char* str) {
+        ap::active_point* act_p = new ap::active_point;
+        ap::set (act_p, fst_ch, root, ap::VERTEX);
+
+        for (unsigned i = fst_ch; str[i] != '/'; i++) { 
             ap::inc_depth (act_p);
-            canonize (act_p, text);
-            update   (act_p, text);
+            canonize (act_p, str);
+            update   (act_p, str);
         }
         ap::inc_depth (act_p);
-        canonize (act_p, text);
-        update   (act_p, text);
+        canonize (act_p, str);
+        update   (act_p, str);
 
         delete act_p;
-        return root;
     }
 
 
@@ -266,9 +286,12 @@ namespace suffix_tree {
                 counter++;
                 chld::child* chld = pair.second;
                 fprintf (dot_file, "\t%u->%u [label =\"", cur.n_, counter);
-                for (auto i = chld->begin_; i < chld->end_ && str[i] != '\0'; i++)
-                     fprintf (dot_file, "%c", str[i]);
-                  fprintf (dot_file, "\n[%u..%u)\"]\n", chld->begin_, chld->end_);
+                auto i = chld->begin_;
+                for (; i < chld->end_ && str[i] != '/'; i++)
+                    fprintf (dot_file, "%c", str[i]);
+                if (i < chld->end_ && str[i] == '/')
+                    fprintf (dot_file, "%c", str[i]);
+                fprintf (dot_file, "\n[%u..%u)\"]\n", chld->begin_, chld->end_);
                 verts.push_back ({counter, chld->to_});
             } 
         }
@@ -339,5 +362,41 @@ namespace suffix_tree {
 
         return true;
     }
+
+
+namespace bounds {
+        str_bounds* set (unsigned* bounds, unsigned nstrings) {
+            assert (bounds);
+
+            str_bounds* sb = new str_bounds;
+            sb->bounds_ = bounds;
+            sb->nstr_ = nstrings;
+
+            return sb;
+        }
+
+
+        void clean (str_bounds* sb) {
+            assert (sb);
+
+            delete[] sb->bounds_;
+            delete sb;
+        }
+
+
+        unsigned nstr (const str_bounds* sb) {
+            assert (sb);
+
+            return sb->nstr_;
+        }
+
+
+        const unsigned* get_sb (const str_bounds* sb) {
+            assert (sb);
+
+            return sb->bounds_;
+        }
+    }
+
 }
 

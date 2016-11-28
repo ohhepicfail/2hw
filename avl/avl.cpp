@@ -7,11 +7,12 @@
 
 namespace avl {
 
-	static inline auto 		height 			(const AVL_node* node) -> decltype (node->height_);
-	static inline auto 		balance_factor 	(const AVL_node* node);
-	static inline void 		fix_height 		(AVL_node* node);
-	static inline AVL_node* rotate_right 	(AVL_node* node);
-	static inline AVL_node* rotate_left  	(AVL_node* node);
+	static inline auto		height 			(const AVL_node* node) -> decltype (node->height_);
+	static inline auto		size 			(const AVL_node* node) -> decltype (node->size_);
+	static inline auto		balance_factor 	(const AVL_node* node);
+	static inline void		fix_height 		(AVL_node* node);
+	static inline AVL_node*	rotate_right 	(AVL_node* node);
+	static inline AVL_node*	rotate_left  	(AVL_node* node);
 	static inline AVL_node* balance 	 	(AVL_node* node);
 
 
@@ -20,6 +21,13 @@ namespace avl {
 			return 0;
 		else
 			return node->height_;
+	}
+
+
+	static inline auto size (const AVL_node* node) -> decltype (node->size_) {
+		if (!node)
+			return 0;
+		else return node->size_;
 	}
 
 
@@ -36,12 +44,17 @@ namespace avl {
 
 		node->height_ = (rh > lh) ? rh : lh ;
 		node->height_++;
+
+		auto rs = size (node->right_);
+		auto ls = size (node->left_);
+
+		node->size_ = ls + rs + 1;
 	}
 
 
 	static inline AVL_node* rotate_right (AVL_node* node)
 	{
-		auto* tmp   = node->left_;
+		auto tmp   = node->left_;
 		node->left_ = tmp->right_;
 		tmp->right_ = node;
 
@@ -54,7 +67,7 @@ namespace avl {
 
 	static inline AVL_node* rotate_left (AVL_node* node)
 	{
-		auto* tmp = node->right_;
+		auto tmp = node->right_;
 
 		node->right_ = tmp->left_;
 		tmp->left_   = node;
@@ -105,10 +118,10 @@ namespace avl {
 		fprintf (dot_file, "\t%u -> %d\n", UINT_MAX, root_->key_); 
 
 		while (!nodes.empty ()) {
-			auto* cur = nodes.front ();
+			auto cur = nodes.front ();
 			nodes.pop_front ();
 
-			fprintf (dot_file, "\t%d [label = \"key = %d\\n height = %u\"]\n", cur->key_, cur->key_, cur->height_);
+			fprintf (dot_file, "\t%d [label = \"key = %d\\n height = %u\\n size = %u\"]\n", cur->key_, cur->key_, cur->height_, cur->size_);
 
 			if (cur->left_) {
 				nodes.push_back (cur->left_);
@@ -136,26 +149,26 @@ namespace avl {
 		std::list<AVL_node**> path {&root_};
 
 		for (;;) {
-			auto* cur = path.back ();
+			auto cur = *path.back ();
 
-			if ((*cur)->key_ == key)
+			if (cur->key_ == key)
 				return;
 
-			else if (key < (*cur)->key_) {
-				if ((*cur)->left_)
-					path.push_back (&(*cur)->left_);
+			else if (key < cur->key_) {
+				if (cur->left_)
+					path.push_back (&cur->left_);
 				else {
-					(*cur)->left_ = new AVL_node;
-					(*cur)->left_->key_ = key;
+					cur->left_ = new AVL_node;
+					cur->left_->key_ = key;
 					break;
 				}
 			}
-			else if (key > (*cur)->key_) {
-				if ((*cur)->right_)
-					path.push_back (&(*cur)->right_);
+			else if (key > cur->key_) {
+				if (cur->right_)
+					path.push_back (&cur->right_);
 				else {
-					(*cur)->right_ = new AVL_node;
-					(*cur)->right_->key_ = key;
+					cur->right_ = new AVL_node;
+					cur->right_->key_ = key;
 					break;
 				}
 			}
@@ -163,7 +176,7 @@ namespace avl {
 		}
 
 		while (!path.empty ()) {
-			auto* cur = path.back ();
+			auto cur = path.back ();
 			path.pop_back ();
 
 			*cur = balance (*cur);
@@ -178,21 +191,21 @@ namespace avl {
 		std::list<AVL_node**> path {&root_};
 
 		for (;;) {
-			auto* cur = path.back ();
+			auto cur = *path.back ();
 
-			if (key == (*cur)->key_)
+			if (key == cur->key_)
 				break;
-			else if (key < (*cur)->key_ && (*cur)->left_)
-				path.push_back (&(*cur)->left_);
-			else if (key > (*cur)->key_ && (*cur)->right_)
-				path.push_back (&(*cur)->right_);
+			else if (key < cur->key_ && cur->left_)
+				path.push_back (&cur->left_);
+			else if (key > cur->key_ && cur->right_)
+				path.push_back (&cur->right_);
 			else 
 				return;
 		}
 
-		auto* for_del = path.back ();
-		auto* lch = &(*for_del)->left_;
-		auto* rch = &(*for_del)->right_;
+		auto for_del = path.back ();
+		auto lch = &(*for_del)->left_;
+		auto rch = &(*for_del)->right_;
 
 
 		if (!(*rch)) {
@@ -210,20 +223,20 @@ namespace avl {
 		else {
 			path.push_back (rch);
 
-			auto* minch = path.back ();
+			auto minch = path.back ();
 			for (; (*minch)->left_; minch = path.back ())
 				path.push_back (&(*minch)->left_);
 
 			(*for_del)->key_ = (*minch)->key_;
 
-			auto* tmp = (*minch)->right_;
+			auto tmp = (*minch)->right_;
 			path.pop_back ();
 			delete *minch;
 			*minch = tmp;
 		}
 
 		while (!path.empty ()) {
-			auto* cur = path.back ();
+			auto cur = path.back ();
 			path.pop_back ();
 
 			*cur = balance (*cur);
@@ -237,7 +250,7 @@ namespace avl {
 			std::list<const AVL_node*> from {that.root_};
 
 			while (!from.empty ()) {
-				auto* cur = from.front ();
+				auto cur = from.front ();
 				from.pop_front ();
 
 				insert (cur->key_);
@@ -251,25 +264,18 @@ namespace avl {
 	}
 
 
-	AVL_tree& AVL_tree::operator= (const AVL_tree& that) {
-		if (this != &that && that.root_) {
-
-			std::list<const AVL_node*> from {that.root_};
-
-			while (!from.empty ()) {
-				auto* cur = from.front ();
-				from.pop_front ();
-
-				insert (cur->key_);
-
-				if (cur->left_)
-					from.push_back (cur->left_);
-				if (cur->right_)
-					from.push_back (cur->right_);
-			}
+	AVL_tree& AVL_tree::operator= (const AVL_tree& that) {		
+		if (this != &that) {
+			AVL_tree tmp (that);
+			*this = std::move (tmp);
 		}
 
 		return *this;
+	}
+
+
+	AVL_tree::AVL_tree (AVL_tree&& that) : root_ (that.root_) {
+		that.root_ = nullptr;
 	}
 
 
@@ -285,7 +291,7 @@ namespace avl {
 			std::list<AVL_node*> nodes {root_};
 
 			while (!nodes.empty ()) {
-				auto* cur = nodes.front ();
+				auto cur = nodes.front ();
 				nodes.pop_front ();
 
 				if (cur->left_)

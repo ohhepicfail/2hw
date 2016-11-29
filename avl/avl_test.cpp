@@ -20,7 +20,7 @@ int main () {
 		printf ("%d\t%u\n", i, avl.n_elem_lessthan (i));
 
 	printf ("\nn min elem\n");
-	for (unsigned i = 1; i < n + 1; i++)
+	for (auto i = 1; i < n + 1; i++)
 		printf ("%u\t%u\n", i, avl.find_nmin (i));
 
 	return 0;

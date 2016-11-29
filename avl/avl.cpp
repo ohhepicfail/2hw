@@ -7,13 +7,13 @@
 
 namespace avl {
 
-	static inline auto		height 			(const AVL_node* node) -> decltype (node->height_);
-	static inline auto		size 			(const AVL_node* node) -> decltype (node->size_);
-	static inline auto		balance_factor 	(const AVL_node* node);
-	static inline void		fix_height 		(AVL_node* node);
-	static inline AVL_node*	rotate_right 	(AVL_node* node);
-	static inline AVL_node*	rotate_left  	(AVL_node* node);
-	static inline AVL_node* balance 	 	(AVL_node* node);
+	static inline auto      height          (const AVL_node* node) -> decltype (node->height_);
+	static inline auto      size            (const AVL_node* node) -> decltype (node->size_);
+	static inline auto      balance_factor  (const AVL_node* node);
+	static inline void      fix_height      (AVL_node* node);
+	static inline AVL_node* rotate_right    (AVL_node* node);
+	static inline AVL_node* rotate_left     (AVL_node* node);
+	static inline AVL_node* balance         (AVL_node* node);
 
 
 	static inline auto height (const AVL_node* node) -> decltype (node->height_) {
@@ -54,7 +54,7 @@ namespace avl {
 
 	static inline AVL_node* rotate_right (AVL_node* node)
 	{
-		auto tmp   = node->left_;
+		auto tmp    = node->left_;
 		node->left_ = tmp->right_;
 		tmp->right_ = node;
 
@@ -264,7 +264,7 @@ namespace avl {
 	}
 
 
-	AVL_tree& AVL_tree::operator= (const AVL_tree& that) {		
+	AVL_tree& AVL_tree::operator= (const AVL_tree& that) {
 		if (this != &that) {
 			AVL_tree tmp (that);
 			*this = std::move (tmp);
@@ -312,7 +312,7 @@ namespace avl {
 		auto cur = root_;
 		unsigned nelems = 0;
 
-		for (;;) {			
+		for (;;) {
 			if (n == cur->key_) {
 				nelems += size (cur->left_);
 				break;
@@ -322,7 +322,7 @@ namespace avl {
 					cur = cur->left_;
 				else
 					break; 
-			}			
+			}
 			else {
 				nelems += size (cur->left_) + 1;
 				if (cur->right_)

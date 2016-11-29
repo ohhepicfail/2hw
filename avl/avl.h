@@ -1,7 +1,6 @@
 #ifndef AVL_H
 #define AVL_H
 
-#include <utility>
 
 namespace avl {
 
@@ -31,7 +30,7 @@ namespace avl {
 		void print (const char* filename) const;
 
 		unsigned n_elem_lessthan (int n) const;
-		int 	 find_nmin		 (unsigned n) const;
+		int      find_nmin       (unsigned n) const;
 	};
 
 }

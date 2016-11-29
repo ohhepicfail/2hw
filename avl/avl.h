@@ -29,6 +29,9 @@ namespace avl {
 		void insert (int key);
 		void remove (int key);
 		void print (const char* filename) const;
+
+		unsigned n_elem_lessthan (int n) const;
+		int 	 find_nmin		 (unsigned n) const;
 	};
 
 }

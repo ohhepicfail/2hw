@@ -305,4 +305,68 @@ namespace avl {
 	}
 
 
+	unsigned AVL_tree::n_elem_lessthan (int n) const {
+		if (!root_)
+			return 0;
+
+		auto cur = root_;
+		unsigned nelems = 0;
+
+		for (;;) {			
+			if (n == cur->key_) {
+				nelems += size (cur->left_);
+				break;
+			}
+			else if (n < cur->key_) {
+				if (cur->left_)
+					cur = cur->left_;
+				else
+					break; 
+			}			
+			else {
+				nelems += size (cur->left_) + 1;
+				if (cur->right_)
+					cur = cur->right_;
+				else
+					break;
+			}
+		}
+
+		return nelems;
+	}
+
+
+	int AVL_tree::find_nmin (unsigned n) const {
+		assert (n >= 1);
+		assert (root_);
+		assert (root_->size_ >= n);	// there is something like throw
+
+		auto cur = root_;
+		bool end = false;
+
+		while (n > 1 && !end) {
+			end = false;
+			auto lsz = size (cur->left_);
+
+			if (lsz >= n)
+				cur = cur->left_;
+			else {
+				n -= lsz;
+
+				if (n > 1) {
+					cur = cur->right_;
+					n--;
+				}
+				else
+					end = true;
+			}
+		}
+
+		while (!end && cur->left_)
+			cur = cur->left_;
+
+		return cur->key_;
+	}
+
+
 }
